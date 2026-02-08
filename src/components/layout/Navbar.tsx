@@ -7,6 +7,7 @@ import { useCart } from "@/contexts/CartContext";
 import CartDrawer from "@/components/cart/CartDrawer";
 
 const navLinks = [
+  { label: "Home", href: "/" },
   { label: "Products", href: "/products" },
   { label: "About Us", href: "/about" },
   { label: "Contact", href: "/contact" },

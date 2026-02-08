@@ -1,32 +1,28 @@
 
-
 # রিভিউ স্লাইডার Edge Fade ফিক্স
 
 ## সমস্যা
-স্ক্রিনশটে দেখা যাচ্ছে বাম এবং ডান পাশে gradient fade খুবই ছোট (মাত্র 80px)। এতে কার্ডগুলো হঠাৎ করে কেটে যাচ্ছে, স্মুথ ফেড হচ্ছে না।
+ডান পাশে gradient fade শুরু হচ্ছে সেকশনের ডান প্রান্ত থেকে অনেক আগে, ফলে ফাঁকা জায়গা দেখা যাচ্ছে। গ্রেডিয়েন্ট `w-32 md:w-48` বেশি চওড়া হয়ে গেছে।
 
 ## সমাধান
-`ReviewsSection.tsx` ফাইলে gradient overlay গুলোর width বাড়িয়ে দেওয়া হবে এবং gradient আরো স্মুথ করা হবে।
+আগের মতো ব্লার স্টাইলে ফিরিয়ে আনা হবে এবং সেকশনের একদম প্রান্ত থেকে শুরু হবে:
 
-### পরিবর্তন:
-- **বাম ও ডান gradient width:** `w-20` (80px) থেকে `w-32 md:w-48` (128px - 192px) এ বাড়ানো হবে
-- Gradient কে multi-stop করা হবে যাতে আরো smooth transition হয় — `from-background via-background/70 to-transparent` ব্যবহার করা হবে
+- **Width:** `w-32 md:w-48` থেকে `w-20` এ ফিরিয়ে আনা হবে (আগের মতো)
+- **Gradient:** `from-background to-transparent` (আগের সিম্পল গ্রেডিয়েন্ট)
+- সেকশনের `overflow-hidden` নিশ্চিত করবে যে ব্লার একদম edge থেকে শুরু হবে
 
 ## Technical Details
 
-**File:** `src/components/home/ReviewsSection.tsx`
-
-Lines 104-105 এর gradient divs আপডেট করা হবে:
+**File:** `src/components/home/ReviewsSection.tsx` (Lines 104-105)
 
 ```text
 Before:
-  w-20 bg-gradient-to-r from-background to-transparent
-  w-20 bg-gradient-to-l from-background to-transparent
-
-After:
   w-32 md:w-48 bg-gradient-to-r from-background via-background/80 to-transparent
   w-32 md:w-48 bg-gradient-to-l from-background via-background/80 to-transparent
+
+After:
+  w-20 bg-gradient-to-r from-background to-transparent
+  w-20 bg-gradient-to-l from-background to-transparent
 ```
 
-এতে gradient আরো wide হবে এবং via stop থাকায় ফেড অনেক বেশি smooth দেখাবে।
-
+এটা আগের সিম্পল ব্লার স্টাইলে ফিরিয়ে আনবে এবং সেকশনের একদম ডান ও বাম প্রান্ত থেকে ব্লার শুরু হবে।

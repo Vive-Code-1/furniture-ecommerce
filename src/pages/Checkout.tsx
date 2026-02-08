@@ -59,13 +59,23 @@ const Checkout = () => {
 
       if (orderError) throw orderError;
 
-      // Insert order items
+      // Look up product IDs by name from the database
+      const productNames = items.map((item) => item.name);
+      const { data: dbProducts } = await supabase
+        .from("products")
+        .select("id, name")
+        .in("name", productNames);
+
+      const nameToId: Record<string, string> = {};
+      dbProducts?.forEach((p) => { nameToId[p.name] = p.id; });
+
+      // Insert order items with matched product_id
       const orderItems = items.map((item) => ({
         order_id: orderData.id,
         product_name: item.name,
         quantity: item.quantity,
         unit_price: item.price,
-        product_id: null as string | null,
+        product_id: nameToId[item.name] || null,
       }));
 
       const { error: itemsError } = await supabase

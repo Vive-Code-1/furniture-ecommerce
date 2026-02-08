@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useCart } from "@/contexts/CartContext";
 import QuickViewModal from "@/components/product/QuickViewModal";
-import type { Product } from "@/data/products";
+import type { DbProduct } from "@/hooks/useProducts";
 import heroSofa from "@/assets/hero-sofa.png";
 import muffinChair from "@/assets/products/muffin-chair.png";
 import ellaChair from "@/assets/products/ella-chair.png";
@@ -13,7 +13,7 @@ import avatar1 from "@/assets/avatars/avatar-1.jpg";
 import avatar2 from "@/assets/avatars/avatar-2.jpg";
 import avatar3 from "@/assets/avatars/avatar-3.jpg";
 
-const heroProductDetails: Product[] = [
+const heroProductDetails: DbProduct[] = [
   {
     id: "hero-1",
     name: "Muffin Chair",
@@ -23,6 +23,9 @@ const heroProductDetails: Product[] = [
     description: "A cozy, round-back accent chair with soft upholstery and solid wood legs. Perfect for reading corners and living rooms.",
     dimensions: "70 x 72 x 80 cm",
     materials: "Premium fabric, solid oak legs",
+    thumbnail_url: null,
+    stock_quantity: 0,
+    is_active: true,
   },
   {
     id: "hero-2",
@@ -33,11 +36,14 @@ const heroProductDetails: Product[] = [
     description: "An elegant mid-century dining chair with gently curved wooden frame and woven seat. Timeless design for any space.",
     dimensions: "55 x 58 x 82 cm",
     materials: "Wool blend fabric, oak legs",
+    thumbnail_url: null,
+    stock_quantity: 0,
+    is_active: true,
   },
 ];
 
 const HeroSection = () => {
-  const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
+  const [quickViewProduct, setQuickViewProduct] = useState<DbProduct | null>(null);
 
   return (
     <section className="relative pt-24 pb-8 md:pt-32 md:pb-16 overflow-hidden">

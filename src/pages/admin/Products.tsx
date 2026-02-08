@@ -180,9 +180,10 @@ const AdminProducts = () => {
       p.category.toLowerCase().includes(search.toLowerCase())
   );
 
-  // Extract unique categories from products for autocomplete
+  // Extract unique categories from products + defaults for autocomplete
+  const DEFAULT_ADMIN_CATEGORIES = ["Chair", "Office Chair", "Cabinet", "Sofa", "Bed", "Bench", "Table"];
   const allCategories = useMemo(() => {
-    const cats = new Set(products.map((p) => p.category));
+    const cats = new Set([...DEFAULT_ADMIN_CATEGORIES, ...products.map((p) => p.category)]);
     return Array.from(cats).sort();
   }, [products]);
 

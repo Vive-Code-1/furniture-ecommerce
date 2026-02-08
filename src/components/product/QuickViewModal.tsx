@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Minus, Plus, Heart, Star } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { supabase } from "@/integrations/supabase/client";
-import type { Product } from "@/data/products";
+import type { DbProduct } from "@/hooks/useProducts";
 
 interface Review {
   id: string;
@@ -15,7 +15,7 @@ interface Review {
 }
 
 interface QuickViewModalProps {
-  product: Product | null;
+  product: DbProduct | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { useCart } from "@/contexts/CartContext";
 import CartDrawer from "@/components/cart/CartDrawer";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const navLinks = [
   { label: "Home", href: "/" },
@@ -56,6 +57,7 @@ const Navbar = () => {
 
           {/* Actions */}
           <div className="flex items-center gap-2">
+            <ThemeToggle className="hidden md:flex" />
             <Button variant="ghost" size="icon" className="hidden md:flex">
               <Search className="w-5 h-5" />
             </Button>
@@ -93,6 +95,9 @@ const Navbar = () => {
                       {link.label}
                     </Link>
                   ))}
+                  <div className="pt-4 border-t border-border">
+                    <ThemeToggle />
+                  </div>
                 </div>
               </SheetContent>
             </Sheet>

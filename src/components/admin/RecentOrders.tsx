@@ -30,6 +30,7 @@ const RecentOrders = () => {
       const { data, error } = await supabase
         .from("orders")
         .select("*")
+        .eq("is_trashed", false)
         .order("order_date", { ascending: false })
         .limit(8);
 

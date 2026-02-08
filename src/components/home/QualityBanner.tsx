@@ -25,7 +25,7 @@ const QualityBanner = () => {
           {/* Book an Appointment - top right with curved background */}
           <div className="absolute top-0 right-0">
             <div className="bg-background rounded-bl-2xl pl-3 pb-3">
-              <Button asChild variant="outline" className="rounded-full bg-card/20 text-foreground border-border backdrop-blur-sm hover:bg-card/40 gap-2">
+              <Button asChild variant="outline" className="rounded-full bg-card/80 text-foreground border-border/50 backdrop-blur-md hover:bg-card/90 shadow-sm gap-2">
                 <Link to="/contact">
                   Book an appointment
                   <ArrowRight className="w-4 h-4" />

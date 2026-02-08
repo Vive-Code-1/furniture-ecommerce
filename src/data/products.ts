@@ -5,6 +5,8 @@ import bench1 from "@/assets/products/bench-1.png";
 import chair2 from "@/assets/products/chair-2.png";
 import muffinChair from "@/assets/products/muffin-chair.png";
 import ellaChair from "@/assets/products/ella-chair.png";
+import officeChair1 from "@/assets/products/office-chair-1.png";
+import officeChair2 from "@/assets/products/office-chair-2.png";
 
 export interface Product {
   id: string;
@@ -17,7 +19,7 @@ export interface Product {
   materials?: string;
 }
 
-export const categories = ["All", "Chair", "Cabinet", "Sofa", "Bed"] as const;
+export const categories = ["All", "Chair", "Office Chair", "Cabinet", "Sofa", "Bed"] as const;
 
 export const products: Product[] = [
   {
@@ -79,6 +81,26 @@ export const products: Product[] = [
     description: "Luxurious deep blue velvet armchair with curved silhouette.",
     dimensions: "78 x 82 x 85 cm",
     materials: "Velvet upholstery, walnut legs",
+  },
+  {
+    id: "7",
+    name: "ErgoMax Pro",
+    price: 345,
+    image: officeChair1,
+    category: "Office Chair",
+    description: "Ergonomic mesh office chair with adjustable lumbar support, armrests, and breathable back for all-day comfort.",
+    dimensions: "65 x 65 x 110 cm",
+    materials: "Mesh fabric, aluminum base, nylon casters",
+  },
+  {
+    id: "8",
+    name: "Executive Luxe",
+    price: 489,
+    image: officeChair2,
+    category: "Office Chair",
+    description: "Premium leather executive chair with high back, headrest, and tilt mechanism for superior comfort.",
+    dimensions: "70 x 72 x 125 cm",
+    materials: "Genuine leather, steel frame, chrome base",
   },
 ];
 

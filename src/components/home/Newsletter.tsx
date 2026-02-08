@@ -33,7 +33,7 @@ const Newsletter = () => {
             Subscribe to our newsletter and
           </h2>
           <p className="font-heading text-2xl md:text-4xl font-bold mb-8">
-            grab <span className="italic">30% OFF</span>
+            grab 30% OFF
           </p>
 
           <form onSubmit={handleSubmit} className="flex gap-2 max-w-md mx-auto">

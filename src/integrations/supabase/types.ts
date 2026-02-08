@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      contact_leads: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          is_read: boolean
+          message: string
+          name: string
+          phone: string | null
+          subject: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          is_read?: boolean
+          message: string
+          name: string
+          phone?: string | null
+          subject: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          name?: string
+          phone?: string | null
+          subject?: string
+        }
+        Relationships: []
+      }
+      newsletter_subscribers: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           created_at: string
@@ -72,6 +123,7 @@ export type Database = {
           status: string
           total_amount: number
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -85,6 +137,7 @@ export type Database = {
           status?: string
           total_amount?: number
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -98,6 +151,7 @@ export type Database = {
           status?: string
           total_amount?: number
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -174,34 +228,50 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_approved: boolean
           is_featured: boolean
+          order_id: string | null
           product_id: string | null
           rating: number
           review_text: string
           reviewer_avatar: string | null
           reviewer_name: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
           id?: string
+          is_approved?: boolean
           is_featured?: boolean
+          order_id?: string | null
           product_id?: string | null
           rating?: number
           review_text: string
           reviewer_avatar?: string | null
           reviewer_name: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
           id?: string
+          is_approved?: boolean
           is_featured?: boolean
+          order_id?: string | null
           product_id?: string | null
           rating?: number
           review_text?: string
           reviewer_avatar?: string | null
           reviewer_name?: string
+          user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "reviews_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "reviews_product_id_fkey"
             columns: ["product_id"]

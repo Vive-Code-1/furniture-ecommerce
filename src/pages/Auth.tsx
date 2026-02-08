@@ -34,7 +34,7 @@ const Auth = () => {
       if (isAdmin) {
         navigate("/admin", { replace: true });
       } else {
-        navigate("/", { replace: true });
+        navigate("/account", { replace: true });
       }
     }
   }, [user, isAdmin, loading, navigate]);
@@ -89,7 +89,7 @@ const Auth = () => {
           <div className="w-10 h-10 bg-foreground rounded-full flex items-center justify-center mx-auto mb-4">
             <div className="w-4 h-4 border-2 border-primary-foreground rounded-full" />
           </div>
-          <h1 className="font-heading text-2xl font-bold">Modulive Admin</h1>
+          <h1 className="font-heading text-2xl font-bold">Modulive</h1>
           <p className="text-muted-foreground text-sm mt-1">
             {isLogin ? "অ্যাকাউন্টে লগইন করুন" : "নতুন অ্যাকাউন্ট তৈরি করুন"}
           </p>

@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { Link, useNavigate } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -12,6 +14,7 @@ import Footer from "@/components/layout/Footer";
 const Checkout = () => {
   const { items, totalPrice, clearCart } = useCart();
   const { toast } = useToast();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "online">("cod");
   const [loading, setLoading] = useState(false);
@@ -33,20 +36,64 @@ const Checkout = () => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handlePlaceOrder = (e: React.FormEvent) => {
+  const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    setTimeout(() => {
-      const orderId = "ORD-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+    try {
+      const shippingAddress = `${formData.address}, ${formData.city}, ${formData.zip}, ${formData.country}`;
+
+      // Create the order in the database
+      const { data: orderData, error: orderError } = await supabase
+        .from("orders")
+        .insert({
+          customer_name: formData.name.trim(),
+          customer_email: formData.email.trim(),
+          shipping_address: shippingAddress,
+          total_amount: grandTotal,
+          status: "pending",
+          user_id: user?.id || null,
+        })
+        .select()
+        .single();
+
+      if (orderError) throw orderError;
+
+      // Insert order items
+      const orderItems = items.map((item) => ({
+        order_id: orderData.id,
+        product_name: item.name,
+        quantity: item.quantity,
+        unit_price: item.price,
+        product_id: null as string | null,
+      }));
+
+      const { error: itemsError } = await supabase
+        .from("order_items")
+        .insert(orderItems);
+
+      if (itemsError) throw itemsError;
+
       toast({
         title: "Order Placed Successfully!",
-        description: `Your order ${orderId} has been confirmed. ${paymentMethod === "cod" ? "Pay on delivery." : ""}`,
+        description: `Your order ${orderData.order_number} has been confirmed. ${paymentMethod === "cod" ? "Pay on delivery." : ""}`,
       });
       clearCart();
+
+      if (user) {
+        navigate("/account");
+      } else {
+        navigate("/track-order");
+      }
+    } catch (error: any) {
+      toast({
+        title: "Order Failed",
+        description: error.message || "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
       setLoading(false);
-      navigate("/track-order");
-    }, 1500);
+    }
   };
 
   if (items.length === 0) {

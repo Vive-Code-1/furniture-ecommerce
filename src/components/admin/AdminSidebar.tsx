@@ -10,6 +10,8 @@ import {
   X,
   ChevronRight,
   Star,
+  Mail,
+  MessageSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
@@ -22,6 +24,8 @@ const sidebarLinks = [
   { label: "Orders", href: "/admin/orders", icon: ShoppingCart },
   { label: "Customers", href: "/admin/customers", icon: Users },
   { label: "Reviews", href: "/admin/reviews", icon: Star },
+  { label: "Newsletter Leads", href: "/admin/newsletter-leads", icon: Mail },
+  { label: "Contact Leads", href: "/admin/contact-leads", icon: MessageSquare },
 ];
 
 const SidebarContent = ({ onClose }: { onClose?: () => void }) => {

@@ -12,12 +12,15 @@ import Contact from "./pages/Contact";
 import Checkout from "./pages/Checkout";
 import OrderTrack from "./pages/OrderTrack";
 import Auth from "./pages/Auth";
+import Account from "./pages/Account";
 import AdminLayout from "./components/admin/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
 import AdminProducts from "./pages/admin/Products";
 import AdminOrders from "./pages/admin/Orders";
 import AdminCustomers from "./pages/admin/Customers";
 import AdminReviews from "./pages/admin/Reviews";
+import NewsletterLeads from "./pages/admin/NewsletterLeads";
+import ContactLeads from "./pages/admin/ContactLeads";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -38,12 +41,15 @@ const App = () => (
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/track-order" element={<OrderTrack />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/account" element={<Account />} />
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<Dashboard />} />
               <Route path="products" element={<AdminProducts />} />
               <Route path="orders" element={<AdminOrders />} />
               <Route path="customers" element={<AdminCustomers />} />
               <Route path="reviews" element={<AdminReviews />} />
+              <Route path="newsletter-leads" element={<NewsletterLeads />} />
+              <Route path="contact-leads" element={<ContactLeads />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

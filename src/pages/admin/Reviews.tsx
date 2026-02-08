@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Pencil, Trash2, Star, Search, MessageSquare, Upload, Link } from "lucide-react";
+import { Plus, Pencil, Trash2, Star, Search, MessageSquare, Upload, Link, CheckCircle2, Clock, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,6 +24,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -36,7 +43,14 @@ interface Review {
   review_text: string;
   product_id: string | null;
   is_featured: boolean;
+  is_approved: boolean;
+  user_id: string | null;
   created_at: string;
+}
+
+interface Product {
+  id: string;
+  name: string;
 }
 
 const emptyReview = {
@@ -44,13 +58,19 @@ const emptyReview = {
   rating: 5,
   review_text: "",
   is_featured: false,
+  is_approved: true,
   reviewer_avatar: "" as string | null,
+  product_id: "" as string | null,
 };
+
+type FilterTab = "all" | "pending" | "approved" | "featured";
 
 const AdminReviews = () => {
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [filterTab, setFilterTab] = useState<FilterTab>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteIds, setDeleteIds] = useState<string[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -62,6 +82,7 @@ const AdminReviews = () => {
 
   useEffect(() => {
     fetchReviews();
+    fetchProducts();
   }, []);
 
   const fetchReviews = async () => {
@@ -72,6 +93,15 @@ const AdminReviews = () => {
 
     if (!error && data) setReviews(data);
     setLoading(false);
+  };
+
+  const fetchProducts = async () => {
+    const { data } = await supabase
+      .from("products")
+      .select("id, name")
+      .order("name");
+
+    if (data) setProducts(data);
   };
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -115,7 +145,9 @@ const AdminReviews = () => {
       rating: editingReview.rating,
       review_text: editingReview.review_text.trim(),
       is_featured: editingReview.is_featured,
+      is_approved: editingReview.is_approved,
       reviewer_avatar: editingReview.reviewer_avatar || null,
+      product_id: editingReview.product_id || null,
     };
 
     if (editingReview.id) {
@@ -144,6 +176,22 @@ const AdminReviews = () => {
     fetchReviews();
   };
 
+  const handleApprove = async (id: string) => {
+    const { error } = await supabase.from("reviews").update({ is_approved: true }).eq("id", id);
+    if (!error) {
+      toast({ title: "Approved!", description: "Review is now visible to customers." });
+      fetchReviews();
+    }
+  };
+
+  const handleReject = async (id: string) => {
+    const { error } = await supabase.from("reviews").update({ is_approved: false }).eq("id", id);
+    if (!error) {
+      toast({ title: "Rejected", description: "Review has been hidden." });
+      fetchReviews();
+    }
+  };
+
   const toggleSelect = (id: string) => {
     setSelected((prev) => {
       const next = new Set(prev);
@@ -165,23 +213,36 @@ const AdminReviews = () => {
       rating: review.rating,
       review_text: review.review_text,
       is_featured: review.is_featured,
+      is_approved: review.is_approved,
       reviewer_avatar: review.reviewer_avatar,
+      product_id: review.product_id,
     });
     setAvatarMode(review.reviewer_avatar ? "url" : "upload");
     setDialogOpen(true);
   };
 
-  const filtered = reviews.filter((r) =>
+  const searchFiltered = reviews.filter((r) =>
     r.reviewer_name.toLowerCase().includes(search.toLowerCase()) ||
     r.review_text.toLowerCase().includes(search.toLowerCase())
   );
+
+  const filtered = searchFiltered.filter((r) => {
+    if (filterTab === "pending") return !r.is_approved;
+    if (filterTab === "approved") return r.is_approved;
+    if (filterTab === "featured") return r.is_featured;
+    return true;
+  });
+
+  const pendingCount = reviews.filter((r) => !r.is_approved).length;
 
   return (
     <div className="p-4 md:p-8 space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="font-heading text-2xl font-bold">Reviews</h1>
-          <p className="text-sm text-muted-foreground">{reviews.length} total reviews</p>
+          <p className="text-sm text-muted-foreground">
+            {reviews.length} total • {pendingCount} pending approval
+          </p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) { setEditingReview(emptyReview); setAvatarMode("upload"); } }}>
           <DialogTrigger asChild>
@@ -190,7 +251,7 @@ const AdminReviews = () => {
               Add Review
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{editingReview.id ? "Edit Review" : "Add Review"}</DialogTitle>
             </DialogHeader>
@@ -198,6 +259,25 @@ const AdminReviews = () => {
               <div className="space-y-2">
                 <Label>Reviewer Name *</Label>
                 <Input value={editingReview.reviewer_name} onChange={(e) => setEditingReview((p) => ({ ...p, reviewer_name: e.target.value }))} />
+              </div>
+
+              {/* Product selector */}
+              <div className="space-y-2">
+                <Label>Product</Label>
+                <Select
+                  value={editingReview.product_id || "none"}
+                  onValueChange={(val) => setEditingReview((p) => ({ ...p, product_id: val === "none" ? null : val }))}
+                >
+                  <SelectTrigger className="rounded-xl">
+                    <SelectValue placeholder="Select a product" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No product</SelectItem>
+                    {products.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Avatar upload section */}
@@ -275,12 +355,36 @@ const AdminReviews = () => {
                 <Switch checked={editingReview.is_featured} onCheckedChange={(checked) => setEditingReview((p) => ({ ...p, is_featured: checked }))} />
                 <Label>Featured on homepage</Label>
               </div>
+              <div className="flex items-center gap-3">
+                <Switch checked={editingReview.is_approved} onCheckedChange={(checked) => setEditingReview((p) => ({ ...p, is_approved: checked }))} />
+                <Label>Approved</Label>
+              </div>
               <Button onClick={handleSave} disabled={saving} className="w-full rounded-full">
                 {saving ? "Saving..." : editingReview.id ? "Update Review" : "Add Review"}
               </Button>
             </div>
           </DialogContent>
         </Dialog>
+      </div>
+
+      {/* Filter Tabs */}
+      <div className="flex gap-2 flex-wrap">
+        {([
+          { key: "all", label: "All" },
+          { key: "pending", label: `Pending (${pendingCount})` },
+          { key: "approved", label: "Approved" },
+          { key: "featured", label: "Featured" },
+        ] as { key: FilterTab; label: string }[]).map((tab) => (
+          <Button
+            key={tab.key}
+            size="sm"
+            variant={filterTab === tab.key ? "default" : "outline"}
+            className="rounded-full"
+            onClick={() => setFilterTab(tab.key)}
+          >
+            {tab.label}
+          </Button>
+        ))}
       </div>
 
       {/* Bulk action bar */}
@@ -325,6 +429,7 @@ const AdminReviews = () => {
                   <th className="px-4 py-4 font-medium">Reviewer</th>
                   <th className="px-4 py-4 font-medium">Rating</th>
                   <th className="px-4 py-4 font-medium hidden md:table-cell">Review</th>
+                  <th className="px-4 py-4 font-medium">Status</th>
                   <th className="px-4 py-4 font-medium">Featured</th>
                   <th className="px-4 py-4 font-medium hidden md:table-cell">Date</th>
                   <th className="px-4 py-4 font-medium">Actions</th>
@@ -345,7 +450,12 @@ const AdminReviews = () => {
                             <span className="text-xs font-bold text-primary">{review.reviewer_name.charAt(0)}</span>
                           </div>
                         )}
-                        <span className="font-medium">{review.reviewer_name}</span>
+                        <div>
+                          <span className="font-medium">{review.reviewer_name}</span>
+                          {review.user_id && (
+                            <span className="text-xs text-muted-foreground block">Customer</span>
+                          )}
+                        </div>
                       </div>
                     </td>
                     <td className="px-4 py-4">
@@ -357,6 +467,11 @@ const AdminReviews = () => {
                     </td>
                     <td className="px-4 py-4 hidden md:table-cell max-w-xs truncate text-muted-foreground">{review.review_text}</td>
                     <td className="px-4 py-4">
+                      <Badge variant="secondary" className={`rounded-full text-xs ${review.is_approved ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"}`}>
+                        {review.is_approved ? "Approved" : "Pending"}
+                      </Badge>
+                    </td>
+                    <td className="px-4 py-4">
                       <Badge variant="secondary" className={`rounded-full text-xs ${review.is_featured ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" : "bg-secondary text-muted-foreground"}`}>
                         {review.is_featured ? "Featured" : "Hidden"}
                       </Badge>
@@ -366,6 +481,15 @@ const AdminReviews = () => {
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-1">
+                        {!review.is_approved ? (
+                          <Button variant="ghost" size="icon" onClick={() => handleApprove(review.id)} title="Approve">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                          </Button>
+                        ) : (
+                          <Button variant="ghost" size="icon" onClick={() => handleReject(review.id)} title="Reject">
+                            <Clock className="w-4 h-4 text-amber-600" />
+                          </Button>
+                        )}
                         <Button variant="ghost" size="icon" onClick={() => openEdit(review)}>
                           <Pencil className="w-4 h-4" />
                         </Button>

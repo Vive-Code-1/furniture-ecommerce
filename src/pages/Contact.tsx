@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 
@@ -20,14 +21,25 @@ const Contact = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
+
+    const { error } = await supabase.from("contact_leads").insert({
+      name: formData.name.trim(),
+      email: formData.email.trim(),
+      phone: formData.phone.trim() || null,
+      subject: formData.subject.trim(),
+      message: formData.message.trim(),
+    });
+
+    if (error) {
+      toast({ title: "Error", description: "Something went wrong. Please try again.", variant: "destructive" });
+    } else {
       toast({ title: "Message Sent!", description: "We'll get back to you within 24 hours." });
       setFormData({ name: "", email: "", phone: "", subject: "", message: "" });
-      setLoading(false);
-    }, 1000);
+    }
+    setLoading(false);
   };
 
   const updateField = (field: string, value: string) => {

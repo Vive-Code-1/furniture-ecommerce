@@ -1,15 +1,16 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
-import { products, categories } from "@/data/products";
+import { useProducts } from "@/hooks/useProducts";
+import type { DbProduct } from "@/hooks/useProducts";
 import { useCart } from "@/contexts/CartContext";
 import QuickViewModal from "@/components/product/QuickViewModal";
-import type { Product } from "@/data/products";
 
 const ProductGrid = () => {
   const [activeCategory, setActiveCategory] = useState("All");
   const { addItem } = useCart();
-  const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
+  const [quickViewProduct, setQuickViewProduct] = useState<DbProduct | null>(null);
+  const { products, categories, loading } = useProducts();
 
   const filteredProducts =
     activeCategory === "All"

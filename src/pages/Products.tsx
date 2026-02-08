@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowUpRight, SlidersHorizontal, X } from "lucide-react";
-import { products, categories } from "@/data/products";
-import type { Product } from "@/data/products";
+import { useProducts } from "@/hooks/useProducts";
+import type { DbProduct } from "@/hooks/useProducts";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import QuickViewModal from "@/components/product/QuickViewModal";
@@ -14,8 +14,9 @@ type SortOption = "default" | "price-low" | "price-high" | "name";
 const Products = () => {
   const [activeCategory, setActiveCategory] = useState("All");
   const [sortBy, setSortBy] = useState<SortOption>("default");
-  const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
+  const [quickViewProduct, setQuickViewProduct] = useState<DbProduct | null>(null);
   const [showMobileFilter, setShowMobileFilter] = useState(false);
+  const { products, categories, loading } = useProducts();
 
   const filteredProducts = (() => {
     let result =

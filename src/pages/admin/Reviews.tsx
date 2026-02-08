@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Pencil, Trash2, Star, Search, MessageSquare } from "lucide-react";
+import { Plus, Pencil, Trash2, Star, Search, MessageSquare, Upload, Link } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -44,6 +44,7 @@ const emptyReview = {
   rating: 5,
   review_text: "",
   is_featured: false,
+  reviewer_avatar: "" as string | null,
 };
 
 const AdminReviews = () => {
@@ -55,6 +56,8 @@ const AdminReviews = () => {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [editingReview, setEditingReview] = useState<typeof emptyReview & { id?: string }>(emptyReview);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [avatarMode, setAvatarMode] = useState<"upload" | "url">("upload");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -71,6 +74,35 @@ const AdminReviews = () => {
     setLoading(false);
   };
 
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Error", description: "Please select an image file.", variant: "destructive" });
+      return;
+    }
+
+    setUploading(true);
+    const ext = file.name.split(".").pop();
+    const fileName = `reviewer-${Date.now()}.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("product-images")
+      .upload(`avatars/${fileName}`, file);
+
+    if (uploadError) {
+      toast({ title: "Upload failed", description: uploadError.message, variant: "destructive" });
+      setUploading(false);
+      return;
+    }
+
+    const { data: urlData } = supabase.storage.from("product-images").getPublicUrl(`avatars/${fileName}`);
+    setEditingReview((p) => ({ ...p, reviewer_avatar: urlData.publicUrl }));
+    setUploading(false);
+    toast({ title: "Uploaded!", description: "Avatar image uploaded." });
+  };
+
   const handleSave = async () => {
     if (!editingReview.reviewer_name.trim() || !editingReview.review_text.trim()) {
       toast({ title: "Error", description: "Name and review text are required.", variant: "destructive" });
@@ -83,6 +115,7 @@ const AdminReviews = () => {
       rating: editingReview.rating,
       review_text: editingReview.review_text.trim(),
       is_featured: editingReview.is_featured,
+      reviewer_avatar: editingReview.reviewer_avatar || null,
     };
 
     if (editingReview.id) {
@@ -132,7 +165,9 @@ const AdminReviews = () => {
       rating: review.rating,
       review_text: review.review_text,
       is_featured: review.is_featured,
+      reviewer_avatar: review.reviewer_avatar,
     });
+    setAvatarMode(review.reviewer_avatar ? "url" : "upload");
     setDialogOpen(true);
   };
 
@@ -148,7 +183,7 @@ const AdminReviews = () => {
           <h1 className="font-heading text-2xl font-bold">Reviews</h1>
           <p className="text-sm text-muted-foreground">{reviews.length} total reviews</p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) setEditingReview(emptyReview); }}>
+        <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) { setEditingReview(emptyReview); setAvatarMode("upload"); } }}>
           <DialogTrigger asChild>
             <Button className="rounded-full gap-2">
               <Plus className="w-4 h-4" />
@@ -164,6 +199,59 @@ const AdminReviews = () => {
                 <Label>Reviewer Name *</Label>
                 <Input value={editingReview.reviewer_name} onChange={(e) => setEditingReview((p) => ({ ...p, reviewer_name: e.target.value }))} />
               </div>
+
+              {/* Avatar upload section */}
+              <div className="space-y-2">
+                <Label>Reviewer Photo</Label>
+                <div className="flex gap-2 mb-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={avatarMode === "upload" ? "default" : "outline"}
+                    className="rounded-full gap-1 text-xs"
+                    onClick={() => setAvatarMode("upload")}
+                  >
+                    <Upload className="w-3 h-3" /> Upload
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={avatarMode === "url" ? "default" : "outline"}
+                    className="rounded-full gap-1 text-xs"
+                    onClick={() => setAvatarMode("url")}
+                  >
+                    <Link className="w-3 h-3" /> URL
+                  </Button>
+                </div>
+
+                {avatarMode === "upload" ? (
+                  <div className="flex items-center gap-3">
+                    {editingReview.reviewer_avatar && (
+                      <img src={editingReview.reviewer_avatar} alt="Avatar" className="w-12 h-12 rounded-full object-cover border-2 border-border" />
+                    )}
+                    <label className="flex-1 flex items-center justify-center gap-2 border-2 border-dashed border-border rounded-xl p-3 cursor-pointer hover:border-primary/50 transition-colors">
+                      <Upload className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">
+                        {uploading ? "Uploading..." : "Choose image"}
+                      </span>
+                      <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={uploading} />
+                    </label>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3">
+                    {editingReview.reviewer_avatar && (
+                      <img src={editingReview.reviewer_avatar} alt="Avatar" className="w-12 h-12 rounded-full object-cover border-2 border-border" />
+                    )}
+                    <Input
+                      placeholder="https://example.com/photo.jpg"
+                      value={editingReview.reviewer_avatar || ""}
+                      onChange={(e) => setEditingReview((p) => ({ ...p, reviewer_avatar: e.target.value }))}
+                      className="flex-1"
+                    />
+                  </div>
+                )}
+              </div>
+
               <div className="space-y-2">
                 <Label>Rating (1-5)</Label>
                 <div className="flex gap-1">
@@ -248,7 +336,18 @@ const AdminReviews = () => {
                     <td className="px-4 py-4">
                       <Checkbox checked={selected.has(review.id)} onCheckedChange={() => toggleSelect(review.id)} />
                     </td>
-                    <td className="px-4 py-4 font-medium">{review.reviewer_name}</td>
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-3">
+                        {review.reviewer_avatar ? (
+                          <img src={review.reviewer_avatar} alt={review.reviewer_name} className="w-8 h-8 rounded-full object-cover" />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                            <span className="text-xs font-bold text-primary">{review.reviewer_name.charAt(0)}</span>
+                          </div>
+                        )}
+                        <span className="font-medium">{review.reviewer_name}</span>
+                      </div>
+                    </td>
                     <td className="px-4 py-4">
                       <div className="flex gap-0.5">
                         {[...Array(5)].map((_, s) => (
@@ -258,7 +357,7 @@ const AdminReviews = () => {
                     </td>
                     <td className="px-4 py-4 hidden md:table-cell max-w-xs truncate text-muted-foreground">{review.review_text}</td>
                     <td className="px-4 py-4">
-                      <Badge variant="secondary" className={`rounded-full text-xs ${review.is_featured ? "bg-emerald-100 text-emerald-700" : "bg-secondary text-muted-foreground"}`}>
+                      <Badge variant="secondary" className={`rounded-full text-xs ${review.is_featured ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" : "bg-secondary text-muted-foreground"}`}>
                         {review.is_featured ? "Featured" : "Hidden"}
                       </Badge>
                     </td>

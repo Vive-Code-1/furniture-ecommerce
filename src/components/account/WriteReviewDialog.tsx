@@ -46,7 +46,7 @@ const WriteReviewDialog = ({
 }: WriteReviewDialogProps) => {
   const [rating, setRating] = useState(5);
   const [reviewText, setReviewText] = useState("");
-  const [selectedProductId, setSelectedProductId] = useState<string>("");
+  const [selectedItemId, setSelectedItemId] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
@@ -56,18 +56,29 @@ const WriteReviewDialog = ({
       toast({ title: "Error", description: "Please write your review.", variant: "destructive" });
       return;
     }
-    if (!selectedProductId) {
+    if (!selectedItemId) {
       toast({ title: "Error", description: "Please select a product.", variant: "destructive" });
       return;
     }
     if (!user) return;
 
     setSaving(true);
-    const selectedItem = orderItems.find((i) => i.product_id === selectedProductId);
+    const selectedItem = orderItems.find((i) => i.id === selectedItemId);
+
+    // If the item doesn't have a product_id, try to look it up by name
+    let productId = selectedItem?.product_id || null;
+    if (!productId && selectedItem) {
+      const { data: matchedProduct } = await supabase
+        .from("products")
+        .select("id")
+        .eq("name", selectedItem.product_name)
+        .maybeSingle();
+      productId = matchedProduct?.id || null;
+    }
 
     const { error } = await supabase.from("reviews").insert({
       user_id: user.id,
-      product_id: selectedProductId,
+      product_id: productId,
       order_id: order.id,
       reviewer_name: user.user_metadata?.full_name || user.email?.split("@")[0] || "Customer",
       rating,
@@ -85,14 +96,12 @@ const WriteReviewDialog = ({
       });
       setRating(5);
       setReviewText("");
-      setSelectedProductId("");
+      setSelectedItemId("");
       onOpenChange(false);
       onReviewSubmitted();
     }
     setSaving(false);
   };
-
-  const productsWithIds = orderItems.filter((i) => i.product_id);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -101,16 +110,16 @@ const WriteReviewDialog = ({
           <DialogTitle>Write a Review — {order.order_number}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 mt-2">
-          {productsWithIds.length > 0 ? (
+          {orderItems.length > 0 ? (
             <div className="space-y-2">
               <Label>Select Product</Label>
-              <Select value={selectedProductId} onValueChange={setSelectedProductId}>
+              <Select value={selectedItemId} onValueChange={setSelectedItemId}>
                 <SelectTrigger className="rounded-xl">
                   <SelectValue placeholder="Choose a product" />
                 </SelectTrigger>
                 <SelectContent>
-                  {productsWithIds.map((item) => (
-                    <SelectItem key={item.id} value={item.product_id!}>
+                  {orderItems.map((item) => (
+                    <SelectItem key={item.id} value={item.id}>
                       {item.product_name}
                     </SelectItem>
                   ))}
@@ -154,7 +163,7 @@ const WriteReviewDialog = ({
 
           <Button
             onClick={handleSubmit}
-            disabled={saving || !selectedProductId}
+            disabled={saving || !selectedItemId}
             className="w-full rounded-full"
           >
             {saving ? "Submitting..." : "Submit Review"}

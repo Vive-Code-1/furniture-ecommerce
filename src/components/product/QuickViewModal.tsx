@@ -1,9 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Minus, Plus, Heart, X, Star } from "lucide-react";
+import { Minus, Plus, Heart, Star } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
+import { supabase } from "@/integrations/supabase/client";
 import type { Product } from "@/data/products";
+
+interface Review {
+  id: string;
+  reviewer_name: string;
+  reviewer_avatar: string | null;
+  rating: number;
+  review_text: string;
+}
 
 interface QuickViewModalProps {
   product: Product | null;
@@ -13,7 +22,26 @@ interface QuickViewModalProps {
 
 const QuickViewModal = ({ product, open, onOpenChange }: QuickViewModalProps) => {
   const [quantity, setQuantity] = useState(1);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const { addItem } = useCart();
+
+  useEffect(() => {
+    if (product && open) {
+      fetchReviews(product.id);
+    }
+  }, [product, open]);
+
+  const fetchReviews = async (productId: string) => {
+    const { data } = await supabase
+      .from("reviews")
+      .select("id, reviewer_name, reviewer_avatar, rating, review_text")
+      .eq("product_id", productId)
+      .eq("is_approved", true)
+      .order("created_at", { ascending: false })
+      .limit(10);
+
+    if (data) setReviews(data);
+  };
 
   if (!product) return null;
 
@@ -30,9 +58,13 @@ const QuickViewModal = ({ product, open, onOpenChange }: QuickViewModalProps) =>
     onOpenChange(false);
   };
 
+  const avgRating = reviews.length > 0
+    ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+    : 0;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl p-0 overflow-hidden bg-card border-border">
+      <DialogContent className="max-w-3xl p-0 overflow-hidden bg-card border-border max-h-[90vh] overflow-y-auto">
         <DialogTitle className="sr-only">{product.name} Quick View</DialogTitle>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
           {/* Product Image */}
@@ -55,11 +87,15 @@ const QuickViewModal = ({ product, open, onOpenChange }: QuickViewModalProps) =>
                   {[1, 2, 3, 4, 5].map((star) => (
                     <Star
                       key={star}
-                      className={`w-4 h-4 ${star <= 4 ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`}
+                      className={`w-4 h-4 ${star <= Math.round(avgRating) ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`}
                     />
                   ))}
                 </div>
-                <span className="text-sm text-muted-foreground">4.7 Rating (5 customer reviews)</span>
+                <span className="text-sm text-muted-foreground">
+                  {reviews.length > 0
+                    ? `${avgRating.toFixed(1)} Rating (${reviews.length} review${reviews.length !== 1 ? "s" : ""})`
+                    : "No reviews yet"}
+                </span>
               </div>
             </div>
 
@@ -117,6 +153,37 @@ const QuickViewModal = ({ product, open, onOpenChange }: QuickViewModalProps) =>
             </div>
           </div>
         </div>
+
+        {/* Reviews Section */}
+        {reviews.length > 0 && (
+          <div className="border-t border-border p-6 md:p-8">
+            <h3 className="font-heading text-lg font-bold mb-4">Customer Reviews ({reviews.length})</h3>
+            <div className="space-y-4">
+              {reviews.map((review) => (
+                <div key={review.id} className="flex gap-3">
+                  {review.reviewer_avatar ? (
+                    <img src={review.reviewer_avatar} alt={review.reviewer_name} className="w-9 h-9 rounded-full object-cover shrink-0" />
+                  ) : (
+                    <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <span className="text-xs font-bold text-primary">{review.reviewer_name.charAt(0)}</span>
+                    </div>
+                  )}
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-medium text-sm">{review.reviewer_name}</span>
+                      <div className="flex gap-0.5">
+                        {[...Array(5)].map((_, s) => (
+                          <Star key={s} className={`w-3 h-3 ${s < review.rating ? "fill-amber-400 text-amber-400" : "text-muted"}`} />
+                        ))}
+                      </div>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{review.review_text}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

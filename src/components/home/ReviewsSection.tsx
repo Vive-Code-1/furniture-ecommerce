@@ -86,7 +86,7 @@ const ReviewsSection = () => {
   const animationDuration = reviews.length * 8;
 
   return (
-    <section className="py-20 px-4 overflow-hidden">
+    <section className="py-20 px-4 overflow-hidden bg-background">
       <div className="container mx-auto">
         <div className="text-center mb-14">
           <h2 className="font-heading text-3xl md:text-4xl font-bold mb-4">

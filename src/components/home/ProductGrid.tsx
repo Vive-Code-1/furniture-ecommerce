@@ -3,10 +3,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
 import { products, categories } from "@/data/products";
 import { useCart } from "@/contexts/CartContext";
+import QuickViewModal from "@/components/product/QuickViewModal";
+import type { Product } from "@/data/products";
 
 const ProductGrid = () => {
   const [activeCategory, setActiveCategory] = useState("All");
   const { addItem } = useCart();
+  const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
 
   const filteredProducts =
     activeCategory === "All"
@@ -60,7 +63,7 @@ const ProductGrid = () => {
                     <img
                       src={product.image}
                       alt={product.name}
-                      className="w-full h-40 md:h-56 object-cover group-hover:scale-105 transition-transform duration-500"
+                      className="w-full h-52 md:h-72 object-contain p-4 group-hover:scale-105 transition-transform duration-500"
                       loading="lazy"
                     />
                   </div>
@@ -70,16 +73,9 @@ const ProductGrid = () => {
                       <p className="text-sm md:text-base font-bold mt-0.5">${product.price.toFixed(2)}</p>
                     </div>
                     <button
-                      onClick={() =>
-                        addItem({
-                          id: product.id,
-                          name: product.name,
-                          price: product.price,
-                          image: product.image,
-                        })
-                      }
-                      className="w-9 h-9 md:w-10 md:h-10 bg-foreground text-primary-foreground rounded-full flex items-center justify-center hover:bg-foreground/80 transition-colors"
-                      aria-label={`Add ${product.name} to cart`}
+                      onClick={() => setQuickViewProduct(product)}
+                      className="relative w-9 h-9 md:w-10 md:h-10 bg-foreground text-primary-foreground rounded-full flex items-center justify-center hover:bg-foreground/80 transition-colors"
+                      aria-label={`Quick view ${product.name}`}
                     >
                       <ArrowUpRight className="w-4 h-4" />
                     </button>
@@ -90,6 +86,13 @@ const ProductGrid = () => {
           </AnimatePresence>
         </div>
       </div>
+
+      {/* Quick View Modal */}
+      <QuickViewModal
+        product={quickViewProduct}
+        open={!!quickViewProduct}
+        onOpenChange={(open) => !open && setQuickViewProduct(null)}
+      />
     </section>
   );
 };

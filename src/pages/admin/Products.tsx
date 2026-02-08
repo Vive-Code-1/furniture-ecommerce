@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { Plus, Pencil, Trash2, Search, Package, Upload, Link as LinkIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,6 +60,8 @@ const AdminProducts = () => {
   const [uploading, setUploading] = useState(false);
   const [imageMode, setImageMode] = useState<"upload" | "url">("upload");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const categoryRef = useRef<HTMLDivElement>(null);
+  const [showCategorySuggestions, setShowCategorySuggestions] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -178,6 +180,29 @@ const AdminProducts = () => {
       p.category.toLowerCase().includes(search.toLowerCase())
   );
 
+  // Extract unique categories from products for autocomplete
+  const allCategories = useMemo(() => {
+    const cats = new Set(products.map((p) => p.category));
+    return Array.from(cats).sort();
+  }, [products]);
+
+  const filteredCategories = useMemo(() => {
+    const val = editingProduct.category.toLowerCase().trim();
+    if (!val) return allCategories;
+    return allCategories.filter((c) => c.toLowerCase().includes(val));
+  }, [editingProduct.category, allCategories]);
+
+  // Close suggestions on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (categoryRef.current && !categoryRef.current.contains(e.target as Node)) {
+        setShowCategorySuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
   return (
     <div className="p-4 md:p-8 space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -204,9 +229,35 @@ const AdminProducts = () => {
                 <Label>Name *</Label>
                 <Input value={editingProduct.name} onChange={(e) => setEditingProduct((p) => ({ ...p, name: e.target.value }))} />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 relative" ref={categoryRef}>
                 <Label>Category *</Label>
-                <Input value={editingProduct.category} onChange={(e) => setEditingProduct((p) => ({ ...p, category: e.target.value }))} />
+                <Input
+                  value={editingProduct.category}
+                  onChange={(e) => {
+                    setEditingProduct((p) => ({ ...p, category: e.target.value }));
+                    setShowCategorySuggestions(true);
+                  }}
+                  onFocus={() => setShowCategorySuggestions(true)}
+                  placeholder="Type or select a category"
+                  autoComplete="off"
+                />
+                {showCategorySuggestions && filteredCategories.length > 0 && (
+                  <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-popover border border-border rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                    {filteredCategories.map((cat) => (
+                      <button
+                        key={cat}
+                        type="button"
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground transition-colors"
+                        onClick={() => {
+                          setEditingProduct((p) => ({ ...p, category: cat }));
+                          setShowCategorySuggestions(false);
+                        }}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">

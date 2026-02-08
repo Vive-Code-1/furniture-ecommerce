@@ -45,19 +45,18 @@ const Dashboard = () => {
   };
 
   const fetchMetrics = async () => {
-    const [productsRes, ordersRes] = await Promise.all([
+    const [productsRes, ordersRes, profilesRes] = await Promise.all([
       supabase.from("products").select("id", { count: "exact", head: true }),
-      supabase.from("orders").select("id, total_amount, status"),
+      supabase.from("orders").select("id, total_amount, status").eq("is_trashed", false),
+      supabase.from("profiles").select("id", { count: "exact", head: true }),
     ]);
 
     const orders = ordersRes.data || [];
     const totalSales = orders.reduce((sum, o) => sum + Number(o.total_amount), 0);
 
-    const uniqueCustomers = new Set(orders.map((o) => o.id)).size;
-
     setMetrics({
       totalSales,
-      totalCustomers: uniqueCustomers,
+      totalCustomers: profilesRes.count || 0,
       totalProducts: productsRes.count || 0,
       totalOrders: orders.length,
     });

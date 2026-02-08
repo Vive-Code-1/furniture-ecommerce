@@ -9,16 +9,19 @@ import {
   Menu,
   X,
   ChevronRight,
+  Star,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/useAuth";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const sidebarLinks = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { label: "Products", href: "/admin/products", icon: Package },
   { label: "Orders", href: "/admin/orders", icon: ShoppingCart },
   { label: "Customers", href: "/admin/customers", icon: Users },
+  { label: "Reviews", href: "/admin/reviews", icon: Star },
 ];
 
 const SidebarContent = ({ onClose }: { onClose?: () => void }) => {
@@ -69,6 +72,10 @@ const SidebarContent = ({ onClose }: { onClose?: () => void }) => {
 
       {/* Footer */}
       <div className="p-4 border-t border-border space-y-2">
+        <div className="flex items-center gap-3 px-4 py-2">
+          <span className="text-sm text-muted-foreground">Theme</span>
+          <ThemeToggle className="ml-auto" />
+        </div>
         <Link
           to="/"
           onClick={onClose}

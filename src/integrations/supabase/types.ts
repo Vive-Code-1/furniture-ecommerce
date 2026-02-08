@@ -65,6 +65,7 @@ export type Database = {
           customer_email: string | null
           customer_name: string
           id: string
+          is_trashed: boolean
           order_date: string
           order_number: string
           shipping_address: string | null
@@ -77,6 +78,7 @@ export type Database = {
           customer_email?: string | null
           customer_name: string
           id?: string
+          is_trashed?: boolean
           order_date?: string
           order_number?: string
           shipping_address?: string | null
@@ -89,6 +91,7 @@ export type Database = {
           customer_email?: string | null
           customer_name?: string
           id?: string
+          is_trashed?: boolean
           order_date?: string
           order_number?: string
           shipping_address?: string | null
@@ -166,6 +169,47 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      reviews: {
+        Row: {
+          created_at: string
+          id: string
+          is_featured: boolean
+          product_id: string | null
+          rating: number
+          review_text: string
+          reviewer_avatar: string | null
+          reviewer_name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_featured?: boolean
+          product_id?: string | null
+          rating?: number
+          review_text: string
+          reviewer_avatar?: string | null
+          reviewer_name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_featured?: boolean
+          product_id?: string | null
+          rating?: number
+          review_text?: string
+          reviewer_avatar?: string | null
+          reviewer_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {

@@ -65,11 +65,11 @@ const HeroSection = () => {
             className="flex flex-col md:flex-row gap-4 items-stretch"
           >
             {/* Main Sofa Image */}
-            <div className="relative w-full md:w-2/3 rounded-2xl overflow-hidden bg-secondary">
+            <div className="relative w-full md:w-2/3 rounded-2xl overflow-hidden bg-secondary min-h-[280px] md:min-h-[420px]">
               <img
                 src={heroSofa}
                 alt="Premium sustainable sofa"
-                className="w-full h-[280px] md:h-[420px] object-cover"
+                className="w-full h-full object-cover absolute inset-0"
                 loading="eager"
               />
 
@@ -118,11 +118,11 @@ const HeroSection = () => {
                   onClick={() => setQuickViewProduct(product)}
                 >
                   <div className="bg-card rounded-xl p-3 shadow-sm border border-border h-full hover:shadow-md transition-shadow flex flex-col">
-                    <div className="flex-1 overflow-hidden rounded-lg">
+                    <div className="h-[140px] md:h-[180px] overflow-hidden rounded-lg bg-secondary/30 flex items-center justify-center">
                       <img
                         src={product.image}
                         alt={product.name}
-                        className="w-full h-full min-h-[120px] object-cover rounded-lg"
+                        className="w-full h-full object-contain p-2"
                       />
                     </div>
                     <div className="flex items-center justify-between mt-2">

@@ -119,6 +119,8 @@ export type Database = {
           is_trashed: boolean
           order_date: string
           order_number: string
+          payment_invoice_id: string | null
+          payment_status: string | null
           shipping_address: string | null
           status: string
           total_amount: number
@@ -133,6 +135,8 @@ export type Database = {
           is_trashed?: boolean
           order_date?: string
           order_number?: string
+          payment_invoice_id?: string | null
+          payment_status?: string | null
           shipping_address?: string | null
           status?: string
           total_amount?: number
@@ -147,6 +151,8 @@ export type Database = {
           is_trashed?: boolean
           order_date?: string
           order_number?: string
+          payment_invoice_id?: string | null
+          payment_status?: string | null
           shipping_address?: string | null
           status?: string
           total_amount?: number

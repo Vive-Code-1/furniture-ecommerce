@@ -75,9 +75,34 @@ const Checkout = () => {
 
       const result = orderResult as { id: string; order_number: string };
 
+      if (paymentMethod === "online") {
+        // Online payment: call UddoktaPay checkout
+        const origin = window.location.origin;
+        const { data: payData, error: payError } = await supabase.functions.invoke("uddoktapay-checkout", {
+          body: {
+            full_name: formData.name.trim(),
+            email: formData.email.trim(),
+            amount: partialPayment.toFixed(2),
+            order_id: result.id,
+            order_number: result.order_number,
+            redirect_url: `${origin}/payment/success`,
+            cancel_url: `${origin}/payment/cancel`,
+          },
+        });
+
+        if (payError || !payData?.payment_url) {
+          throw new Error(payData?.error || payError?.message || "Payment gateway error");
+        }
+
+        clearCart();
+        window.location.href = payData.payment_url;
+        return;
+      }
+
+      // COD flow
       toast({
         title: "Order Placed Successfully!",
-        description: `Your order ${result.order_number} has been confirmed. ${paymentMethod === "cod" ? "Pay on delivery." : ""}`,
+        description: `Your order ${result.order_number} has been confirmed. Pay on delivery.`,
       });
       clearCart();
 

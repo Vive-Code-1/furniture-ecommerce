@@ -1,1 +1,7 @@
 project_id = "pioxxiyslfvxafjptich"
+
+[functions.uddoktapay-checkout]
+verify_jwt = false
+
+[functions.uddoktapay-verify]
+verify_jwt = false

@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Minus, Plus, Heart, Star } from "lucide-react";
+import { Minus, Plus, ShoppingBag, Star } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { supabase } from "@/integrations/supabase/client";
 import type { DbProduct } from "@/hooks/useProducts";
@@ -24,6 +25,7 @@ const QuickViewModal = ({ product, open, onOpenChange }: QuickViewModalProps) =>
   const [quantity, setQuantity] = useState(1);
   const [reviews, setReviews] = useState<Review[]>([]);
   const { addItem } = useCart();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (product && open) {
@@ -72,7 +74,7 @@ const QuickViewModal = ({ product, open, onOpenChange }: QuickViewModalProps) =>
             <img
               src={product.image}
               alt={product.name}
-              className="w-full max-h-[400px] object-contain"
+              className="w-full max-h-[400px] object-cover rounded-xl"
             />
           </div>
 
@@ -134,9 +136,25 @@ const QuickViewModal = ({ product, open, onOpenChange }: QuickViewModalProps) =>
               <Button onClick={handleAddToCart} className="rounded-full flex-1">
                 ADD TO CART
               </Button>
-              <Button variant="outline" className="rounded-full gap-2">
-                <Heart className="w-4 h-4" />
-                Add To Wishlist
+              <Button
+                variant="outline"
+                className="rounded-full gap-2 flex-1"
+                onClick={() => {
+                  for (let i = 0; i < quantity; i++) {
+                    addItem({
+                      id: product.id,
+                      name: product.name,
+                      price: product.price,
+                      image: product.image,
+                    });
+                  }
+                  setQuantity(1);
+                  onOpenChange(false);
+                  navigate("/checkout");
+                }}
+              >
+                <ShoppingBag className="w-4 h-4" />
+                Direct Order
               </Button>
             </div>
 

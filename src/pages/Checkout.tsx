@@ -18,6 +18,9 @@ const Checkout = () => {
   const navigate = useNavigate();
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "online">("cod");
   const [loading, setLoading] = useState(false);
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount_type: string; discount_value: number } | null>(null);
+  const [couponLoading, setCouponLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -29,8 +32,57 @@ const Checkout = () => {
   });
 
   const deliveryCharge = 15;
-  const grandTotal = totalPrice + deliveryCharge;
-  const partialPayment = Math.max(totalPrice * 0.1, deliveryCharge);
+
+  const discount = appliedCoupon
+    ? appliedCoupon.discount_type === "percentage"
+      ? totalPrice * appliedCoupon.discount_value / 100
+      : Math.min(appliedCoupon.discount_value, totalPrice)
+    : 0;
+
+  const grandTotal = totalPrice - discount + deliveryCharge;
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setCouponLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("coupons")
+        .select("*")
+        .eq("code", couponCode.trim().toUpperCase())
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!data) {
+        toast({ title: "Invalid Coupon", description: "This coupon code doesn't exist or is inactive.", variant: "destructive" });
+        return;
+      }
+      if (data.expires_at && new Date(data.expires_at) < new Date()) {
+        toast({ title: "Expired Coupon", description: "This coupon has expired.", variant: "destructive" });
+        return;
+      }
+      if (data.max_uses && data.used_count >= data.max_uses) {
+        toast({ title: "Usage Limit", description: "This coupon has reached its usage limit.", variant: "destructive" });
+        return;
+      }
+      if (totalPrice < data.min_order_amount) {
+        toast({ title: "Minimum Not Met", description: `Minimum order of $${data.min_order_amount} required.`, variant: "destructive" });
+        return;
+      }
+
+      setAppliedCoupon({ code: data.code, discount_type: data.discount_type, discount_value: data.discount_value });
+      toast({ title: "Coupon Applied!", description: `${data.discount_type === "percentage" ? `${data.discount_value}%` : `$${data.discount_value}`} discount applied.` });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode("");
+  };
 
   const updateField = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));

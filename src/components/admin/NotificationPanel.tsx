@@ -195,7 +195,7 @@ const NotificationPanel = () => {
                           <span className="text-xs text-muted-foreground ml-2">{order.customer_name}</span>
                         </div>
                         <span className="text-xs font-semibold text-foreground">
-                          ৳{Number(order.total_amount).toLocaleString()}
+                          ${Number(order.total_amount).toLocaleString()}
                         </span>
                       </div>
                     ))}

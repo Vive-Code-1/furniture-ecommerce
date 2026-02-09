@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Truck, CreditCard, Banknote } from "lucide-react";
+import { ArrowLeft, Truck, CreditCard, Banknote, Tag, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCart } from "@/contexts/CartContext";
@@ -18,6 +18,9 @@ const Checkout = () => {
   const navigate = useNavigate();
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "online">("cod");
   const [loading, setLoading] = useState(false);
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount_type: string; discount_value: number } | null>(null);
+  const [couponLoading, setCouponLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -29,8 +32,57 @@ const Checkout = () => {
   });
 
   const deliveryCharge = 15;
-  const grandTotal = totalPrice + deliveryCharge;
-  const partialPayment = Math.max(totalPrice * 0.1, deliveryCharge);
+
+  const discount = appliedCoupon
+    ? appliedCoupon.discount_type === "percentage"
+      ? totalPrice * appliedCoupon.discount_value / 100
+      : Math.min(appliedCoupon.discount_value, totalPrice)
+    : 0;
+
+  const grandTotal = totalPrice - discount + deliveryCharge;
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setCouponLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("coupons")
+        .select("*")
+        .eq("code", couponCode.trim().toUpperCase())
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!data) {
+        toast({ title: "Invalid Coupon", description: "This coupon code doesn't exist or is inactive.", variant: "destructive" });
+        return;
+      }
+      if (data.expires_at && new Date(data.expires_at) < new Date()) {
+        toast({ title: "Expired Coupon", description: "This coupon has expired.", variant: "destructive" });
+        return;
+      }
+      if (data.max_uses && data.used_count >= data.max_uses) {
+        toast({ title: "Usage Limit", description: "This coupon has reached its usage limit.", variant: "destructive" });
+        return;
+      }
+      if (totalPrice < data.min_order_amount) {
+        toast({ title: "Minimum Not Met", description: `Minimum order of $${data.min_order_amount} required.`, variant: "destructive" });
+        return;
+      }
+
+      setAppliedCoupon({ code: data.code, discount_type: data.discount_type, discount_value: data.discount_value });
+      toast({ title: "Coupon Applied!", description: `${data.discount_type === "percentage" ? `${data.discount_value}%` : `$${data.discount_value}`} discount applied.` });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode("");
+  };
 
   const updateField = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -69,6 +121,8 @@ const Checkout = () => {
         p_total_amount: grandTotal,
         p_user_id: user?.id || null,
         p_items: orderItems,
+        p_coupon_code: appliedCoupon?.code || null,
+        p_discount_amount: discount,
       });
 
       if (orderError) throw orderError;
@@ -281,11 +335,48 @@ const Checkout = () => {
                       </div>
                     ))}
                   </div>
+
+                  {/* Coupon Code */}
+                  <div className="border-t border-border pt-4">
+                    {appliedCoupon ? (
+                      <div className="flex items-center justify-between bg-primary/10 rounded-xl px-3 py-2">
+                        <div className="flex items-center gap-2">
+                          <Tag className="w-4 h-4 text-primary" />
+                          <span className="text-sm font-medium">{appliedCoupon.code}</span>
+                          <span className="text-xs text-muted-foreground">
+                            (-{appliedCoupon.discount_type === "percentage" ? `${appliedCoupon.discount_value}%` : `$${appliedCoupon.discount_value}`})
+                          </span>
+                        </div>
+                        <button type="button" onClick={removeCoupon} className="text-muted-foreground hover:text-foreground">
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Coupon code"
+                          value={couponCode}
+                          onChange={(e) => setCouponCode(e.target.value)}
+                          className="rounded-xl bg-secondary border-border uppercase text-sm"
+                        />
+                        <Button type="button" variant="outline" onClick={handleApplyCoupon} disabled={couponLoading} className="rounded-xl shrink-0">
+                          {couponLoading ? "..." : "Apply"}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
                   <div className="border-t border-border pt-4 space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Subtotal</span>
                       <span>${totalPrice.toFixed(2)}</span>
                     </div>
+                    {discount > 0 && (
+                      <div className="flex justify-between text-sm text-primary">
+                        <span>Discount</span>
+                        <span>-${discount.toFixed(2)}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Delivery</span>
                       <span>${deliveryCharge.toFixed(2)}</span>

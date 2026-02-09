@@ -47,6 +47,45 @@ export type Database = {
         }
         Relationships: []
       }
+      coupons: {
+        Row: {
+          code: string
+          created_at: string
+          discount_type: string
+          discount_value: number
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          max_uses: number | null
+          min_order_amount: number
+          used_count: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          discount_type?: string
+          discount_value?: number
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          min_order_amount?: number
+          used_count?: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          discount_type?: string
+          discount_value?: number
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          min_order_amount?: number
+          used_count?: number
+        }
+        Relationships: []
+      }
       newsletter_subscribers: {
         Row: {
           created_at: string
@@ -112,9 +151,11 @@ export type Database = {
       }
       orders: {
         Row: {
+          coupon_code: string | null
           created_at: string
           customer_email: string | null
           customer_name: string
+          discount_amount: number
           id: string
           is_trashed: boolean
           order_date: string
@@ -128,9 +169,11 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          coupon_code?: string | null
           created_at?: string
           customer_email?: string | null
           customer_name: string
+          discount_amount?: number
           id?: string
           is_trashed?: boolean
           order_date?: string
@@ -144,9 +187,11 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          coupon_code?: string | null
           created_at?: string
           customer_email?: string | null
           customer_name?: string
+          discount_amount?: number
           id?: string
           is_trashed?: boolean
           order_date?: string
@@ -331,17 +376,31 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      create_order: {
-        Args: {
-          p_customer_email: string
-          p_customer_name: string
-          p_items?: Json
-          p_shipping_address: string
-          p_total_amount: number
-          p_user_id?: string
-        }
-        Returns: Json
-      }
+      create_order:
+        | {
+            Args: {
+              p_customer_email: string
+              p_customer_name: string
+              p_items?: Json
+              p_shipping_address: string
+              p_total_amount: number
+              p_user_id?: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_coupon_code?: string
+              p_customer_email: string
+              p_customer_name: string
+              p_discount_amount?: number
+              p_items?: Json
+              p_shipping_address: string
+              p_total_amount: number
+              p_user_id?: string
+            }
+            Returns: Json
+          }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

@@ -1,117 +1,62 @@
 
+# Three Changes: Full Amount Payment, Admin UI Labels, and Stripe Option
 
-# Integrate UddoktaPay Payment Gateway
+## 1. Send Full Product Total to UddoktaPay (Not Just 10%)
 
-## Overview
+Currently, the checkout sends `partialPayment` (10% of total or delivery charge) to UddoktaPay. You want the **full grandTotal** amount to show on UddoktaPay's payment page instead.
 
-Add UddoktaPay as the online payment processor for the checkout page. When a customer selects "Online Payment," they pay 10% of the product total (or at least the delivery charge) via UddoktaPay. The system creates the order first, then redirects to UddoktaPay for payment.
+**File:** `src/pages/Checkout.tsx`
+- Change `amount: partialPayment.toFixed(2)` to `amount: grandTotal.toFixed(2)` in the edge function call (line 85)
+- Update the "Online Payment" button text from `Pay $XX (10%)` to show the full total
+- Remove the "Pay 10% now" messaging from the payment method card and order summary
+- Update button text from `Pay $${partialPayment.toFixed(2)} & Order` to `Pay $${grandTotal.toFixed(2)} & Order`
 
-**Important note:** This project uses Lovable Cloud (not Next.js), so the server-side option will use a backend function instead of a Next.js API route. The end result is identical.
+## 2. Rename Admin Sidebar and Settings Page Labels
 
-## Flow
+**File:** `src/components/admin/AdminSidebar.tsx`
+- Change sidebar label from `"Settings"` to `"Payment Gateway"` (line 30)
 
-```text
-Customer selects "Online Payment" -> Clicks "Pay & Order"
-  -> Order created in database (status: "pending")
-  -> Backend function calls UddoktaPay Create Charge API
-  -> Customer redirected to UddoktaPay payment page
-  -> After payment, UddoktaPay redirects back to our site
-  -> Payment Success page calls Verify Payment API
-  -> Order status updated to "paid" if successful
-```
+**File:** `src/pages/admin/Settings.tsx`
+- Change page heading from `"Settings"` to `"Payment Gateway"`
+- Change subtitle from `"Manage payment gateway and site configuration"` to something simpler
+- Change card heading from `"Payment Gateway (UddoktaPay)"` to just `"UddoktaPay"`
 
-## Changes
+## 3. Add Stripe API Configuration Card
 
-### 1. Store API Key as a Secret
-
-The UddoktaPay API key (`DLXyoryKLC4Vj1foeOFmZcH49zxe62kx6565WjRd`) will be stored securely as a backend secret, not in the codebase.
-
-The base URL (`https://digitaltechdude.paymently.io/api`) will also be stored as a secret for easy configuration.
-
-### 2. Create Edge Function: `uddoktapay-checkout`
-
-A backend function that:
-- Receives order details from the frontend
-- Calls UddoktaPay's `/checkout-v2` endpoint with the API key
-- Returns the `payment_url` to the frontend
-- Uses the preview/published URL as the redirect base
-
-### 3. Create Edge Function: `uddoktapay-verify`
-
-A backend function that:
-- Receives the `invoice_id` from the callback
-- Calls UddoktaPay's `/verify-payment` endpoint
-- If status is "COMPLETED", updates the order's payment status in the database
-- Returns the verification result
-
-### 4. Update `src/pages/Checkout.tsx`
-
-When "Online Payment" is selected:
-- Create the order first (existing `create_order` RPC)
-- Call `uddoktapay-checkout` edge function with order details
-- Redirect the user to the returned `payment_url`
-
-For COD, the flow remains unchanged.
-
-### 5. Create `src/pages/PaymentSuccess.tsx`
-
-A new page at `/payment/success` that:
-- Extracts `invoice_id` from the URL query params
-- Calls `uddoktapay-verify` edge function
-- Shows success/failure message with order details
-- Redirects to order tracking
-
-### 6. Create `src/pages/PaymentCancel.tsx`
-
-A simple page at `/payment/cancel` showing the payment was cancelled with a link back to checkout.
-
-### 7. Update `src/App.tsx`
-
-Add routes for `/payment/success` and `/payment/cancel`.
-
-### 8. Database Migration
-
-Add a `payment_status` and `payment_invoice_id` column to the `orders` table to track payment state.
-
-```sql
-ALTER TABLE public.orders
-  ADD COLUMN IF NOT EXISTS payment_status TEXT DEFAULT 'unpaid',
-  ADD COLUMN IF NOT EXISTS payment_invoice_id TEXT;
-```
+**File:** `src/pages/admin/Settings.tsx`
+- Add a second card below the UddoktaPay card for **Stripe** configuration
+- Include fields for: Stripe API Key (Secret Key) and Stripe Publishable Key
+- Save them to the same `site_settings` table with keys like `stripe_api_key` and `stripe_publishable_key`
+- Same save/load pattern as UddoktaPay
 
 ## Technical Details
 
-### Edge Function: uddoktapay-checkout
-
-```typescript
-// POST body: { full_name, email, amount, order_id, order_number }
-// Calls: {base_URL}/checkout-v2
-// Returns: { payment_url }
-```
-
-### Edge Function: uddoktapay-verify
-
-```typescript
-// POST body: { invoice_id }
-// Calls: {base_URL}/verify-payment
-// On COMPLETED: updates orders table payment_status = 'paid'
-// Returns: { status, order_number, ... }
-```
-
 ### Checkout.tsx Changes
+```text
+Line 33: Remove partialPayment calculation (or keep for reference but don't use for payment)
+Line 85: amount: grandTotal.toFixed(2)  (was partialPayment.toFixed(2))
+Line 257: Remove "Pay 10% now ($XX)" text
+Line 299: Remove "Pay now: $XX (10%) - Remaining on delivery" text
+Line 304: Button text: `Pay $${grandTotal.toFixed(2)} & Order`
+```
 
-- COD flow: unchanged (create order -> redirect to tracking)
-- Online flow: create order -> call uddoktapay-checkout -> redirect to payment_url
-- The `redirect_url` will point to `/payment/success`
-- The `cancel_url` will point to `/payment/cancel`
+### AdminSidebar.tsx Changes
+```text
+Line 30: { label: "Payment Gateway", href: "/admin/settings", icon: Settings }
+```
 
-## Files to Create/Modify
+### Settings.tsx Changes
+- Page title: "Payment Gateway"
+- UddoktaPay card title: "UddoktaPay"
+- New Stripe card with fields:
+  - `stripe_secret_key` (sensitive)
+  - `stripe_publishable_key` (not sensitive)
+- Both cards save independently with their own Save button
 
-1. **New:** `supabase/functions/uddoktapay-checkout/index.ts`
-2. **New:** `supabase/functions/uddoktapay-verify/index.ts`
-3. **New:** `src/pages/PaymentSuccess.tsx`
-4. **New:** `src/pages/PaymentCancel.tsx`
-5. **Modified:** `src/pages/Checkout.tsx` -- add UddoktaPay redirect for online payments
-6. **Modified:** `src/App.tsx` -- add payment routes
-7. **New migration:** add `payment_status` and `payment_invoice_id` columns to orders
+### Database
+No migration needed -- reuses existing `site_settings` table with new keys for Stripe.
 
+## Files Modified
+1. `src/pages/Checkout.tsx` -- send full amount, update UI text
+2. `src/components/admin/AdminSidebar.tsx` -- rename "Settings" to "Payment Gateway"
+3. `src/pages/admin/Settings.tsx` -- rename headings, add Stripe card

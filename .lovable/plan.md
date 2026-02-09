@@ -1,62 +1,112 @@
 
-# Three Changes: Full Amount Payment, Admin UI Labels, and Stripe Option
+# Coupon/Discount Code System
 
-## 1. Send Full Product Total to UddoktaPay (Not Just 10%)
+## Overview
+Add a complete coupon management system: admin can create/edit/delete coupons, and customers can apply coupon codes at checkout for percentage or fixed amount discounts with usage limits.
 
-Currently, the checkout sends `partialPayment` (10% of total or delivery charge) to UddoktaPay. You want the **full grandTotal** amount to show on UddoktaPay's payment page instead.
+## 1. Database: New `coupons` Table
+
+Create a `coupons` table with the following columns:
+- `id` (UUID, primary key)
+- `code` (TEXT, unique, not null) -- the coupon code customers enter
+- `discount_type` (TEXT, not null, default 'percentage') -- 'percentage' or 'fixed'
+- `discount_value` (NUMERIC, not null) -- e.g. 10 for 10% or 10 for $10
+- `min_order_amount` (NUMERIC, default 0) -- minimum cart total to use coupon
+- `max_uses` (INTEGER, nullable) -- total usage limit (null = unlimited)
+- `used_count` (INTEGER, default 0) -- how many times used
+- `is_active` (BOOLEAN, default true)
+- `expires_at` (TIMESTAMP WITH TIME ZONE, nullable)
+- `created_at` (TIMESTAMP WITH TIME ZONE, default now())
+
+**RLS Policies:**
+- Admins: ALL access
+- Anyone: SELECT active coupons (needed for checkout validation)
+
+**Also:** Add `discount_amount` and `coupon_code` columns to the `orders` table to track applied discounts.
+
+**Database function:** Update `create_order` to accept `p_coupon_code` and `p_discount_amount` params, and increment `used_count` on the coupon.
+
+## 2. Admin Panel: Coupon Management Page
+
+**New file:** `src/pages/admin/Coupons.tsx`
+
+Features:
+- Table listing all coupons (code, type, value, usage, status, expiry)
+- "Add Coupon" button opens a dialog/form
+- Edit and delete actions per coupon
+- Toggle active/inactive status
+- Show used_count / max_uses
+
+**Sidebar update:** Add "Coupons" link with `Tag` icon in `AdminSidebar.tsx` between "Reviews" and "Newsletter Leads".
+
+**Route:** Add `/admin/coupons` route in `App.tsx`.
+
+## 3. Checkout: Coupon Input Field
 
 **File:** `src/pages/Checkout.tsx`
-- Change `amount: partialPayment.toFixed(2)` to `amount: grandTotal.toFixed(2)` in the edge function call (line 85)
-- Update the "Online Payment" button text from `Pay $XX (10%)` to show the full total
-- Remove the "Pay 10% now" messaging from the payment method card and order summary
-- Update button text from `Pay $${partialPayment.toFixed(2)} & Order` to `Pay $${grandTotal.toFixed(2)} & Order`
 
-## 2. Rename Admin Sidebar and Settings Page Labels
-
-**File:** `src/components/admin/AdminSidebar.tsx`
-- Change sidebar label from `"Settings"` to `"Payment Gateway"` (line 30)
-
-**File:** `src/pages/admin/Settings.tsx`
-- Change page heading from `"Settings"` to `"Payment Gateway"`
-- Change subtitle from `"Manage payment gateway and site configuration"` to something simpler
-- Change card heading from `"Payment Gateway (UddoktaPay)"` to just `"UddoktaPay"`
-
-## 3. Add Stripe API Configuration Card
-
-**File:** `src/pages/admin/Settings.tsx`
-- Add a second card below the UddoktaPay card for **Stripe** configuration
-- Include fields for: Stripe API Key (Secret Key) and Stripe Publishable Key
-- Save them to the same `site_settings` table with keys like `stripe_api_key` and `stripe_publishable_key`
-- Same save/load pattern as UddoktaPay
+Add a coupon section in the Order Summary card:
+- Input field + "Apply" button
+- On apply: query `coupons` table to validate code (active, not expired, under usage limit, meets min order)
+- Show discount line in the summary (between Subtotal and Delivery)
+- Recalculate `grandTotal` with discount applied
+- Pass `coupon_code` and `discount_amount` to `create_order` RPC
 
 ## Technical Details
 
-### Checkout.tsx Changes
-```text
-Line 33: Remove partialPayment calculation (or keep for reference but don't use for payment)
-Line 85: amount: grandTotal.toFixed(2)  (was partialPayment.toFixed(2))
-Line 257: Remove "Pay 10% now ($XX)" text
-Line 299: Remove "Pay now: $XX (10%) - Remaining on delivery" text
-Line 304: Button text: `Pay $${grandTotal.toFixed(2)} & Order`
+### Database Migration SQL
+```sql
+CREATE TABLE public.coupons (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  code TEXT UNIQUE NOT NULL,
+  discount_type TEXT NOT NULL DEFAULT 'percentage',
+  discount_value NUMERIC NOT NULL DEFAULT 0,
+  min_order_amount NUMERIC NOT NULL DEFAULT 0,
+  max_uses INTEGER,
+  used_count INTEGER NOT NULL DEFAULT 0,
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  expires_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+
+ALTER TABLE public.coupons ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Admins can manage coupons" ON public.coupons FOR ALL
+  USING (has_role(auth.uid(), 'admin'::app_role));
+
+CREATE POLICY "Anyone can view active coupons" ON public.coupons FOR SELECT
+  USING (is_active = true);
+
+-- Add tracking columns to orders
+ALTER TABLE public.orders
+  ADD COLUMN IF NOT EXISTS coupon_code TEXT,
+  ADD COLUMN IF NOT EXISTS discount_amount NUMERIC DEFAULT 0;
 ```
 
-### AdminSidebar.tsx Changes
-```text
-Line 30: { label: "Payment Gateway", href: "/admin/settings", icon: Settings }
-```
+### Updated `create_order` Function
+Add parameters `p_coupon_code TEXT DEFAULT NULL` and `p_discount_amount NUMERIC DEFAULT 0`. Store them on the order row. If a coupon code is provided, increment `used_count` on the matching coupon.
 
-### Settings.tsx Changes
-- Page title: "Payment Gateway"
-- UddoktaPay card title: "UddoktaPay"
-- New Stripe card with fields:
-  - `stripe_secret_key` (sensitive)
-  - `stripe_publishable_key` (not sensitive)
-- Both cards save independently with their own Save button
+### Checkout Coupon Logic (Checkout.tsx)
+- New state: `couponCode`, `appliedCoupon`, `discount`
+- "Apply" handler queries coupons table by code, validates conditions
+- Discount calculation: percentage = `totalPrice * value / 100`, fixed = `value`
+- `grandTotal = totalPrice - discount + deliveryCharge`
+- "Remove" button to clear applied coupon
 
-### Database
-No migration needed -- reuses existing `site_settings` table with new keys for Stripe.
+### Admin Coupons Page (Coupons.tsx)
+- CRUD operations on `coupons` table
+- Dialog form with fields: code, discount_type (select), discount_value, min_order_amount, max_uses, expires_at, is_active
+- Table with columns: Code, Type, Value, Min Order, Usage, Status, Expires, Actions
 
-## Files Modified
-1. `src/pages/Checkout.tsx` -- send full amount, update UI text
-2. `src/components/admin/AdminSidebar.tsx` -- rename "Settings" to "Payment Gateway"
-3. `src/pages/admin/Settings.tsx` -- rename headings, add Stripe card
+### AdminSidebar.tsx
+Add entry: `{ label: "Coupons", href: "/admin/coupons", icon: Tag }`
+
+### App.tsx
+Add route: `<Route path="coupons" element={<AdminCoupons />} />`
+
+## Files to Create/Modify
+1. **New migration** -- coupons table, order columns, updated create_order function
+2. **New:** `src/pages/admin/Coupons.tsx` -- admin coupon management
+3. **Modified:** `src/components/admin/AdminSidebar.tsx` -- add Coupons link
+4. **Modified:** `src/App.tsx` -- add coupon route
+5. **Modified:** `src/pages/Checkout.tsx` -- coupon input + discount logic

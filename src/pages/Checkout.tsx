@@ -335,11 +335,48 @@ const Checkout = () => {
                       </div>
                     ))}
                   </div>
+
+                  {/* Coupon Code */}
+                  <div className="border-t border-border pt-4">
+                    {appliedCoupon ? (
+                      <div className="flex items-center justify-between bg-primary/10 rounded-xl px-3 py-2">
+                        <div className="flex items-center gap-2">
+                          <Tag className="w-4 h-4 text-primary" />
+                          <span className="text-sm font-medium">{appliedCoupon.code}</span>
+                          <span className="text-xs text-muted-foreground">
+                            (-{appliedCoupon.discount_type === "percentage" ? `${appliedCoupon.discount_value}%` : `$${appliedCoupon.discount_value}`})
+                          </span>
+                        </div>
+                        <button type="button" onClick={removeCoupon} className="text-muted-foreground hover:text-foreground">
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Coupon code"
+                          value={couponCode}
+                          onChange={(e) => setCouponCode(e.target.value)}
+                          className="rounded-xl bg-secondary border-border uppercase text-sm"
+                        />
+                        <Button type="button" variant="outline" onClick={handleApplyCoupon} disabled={couponLoading} className="rounded-xl shrink-0">
+                          {couponLoading ? "..." : "Apply"}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
                   <div className="border-t border-border pt-4 space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Subtotal</span>
                       <span>${totalPrice.toFixed(2)}</span>
                     </div>
+                    {discount > 0 && (
+                      <div className="flex justify-between text-sm text-primary">
+                        <span>Discount</span>
+                        <span>-${discount.toFixed(2)}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Delivery</span>
                       <span>${deliveryCharge.toFixed(2)}</span>

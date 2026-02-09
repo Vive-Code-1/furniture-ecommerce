@@ -64,7 +64,7 @@ const ProductGrid = () => {
                     <img
                       src={product.image}
                       alt={product.name}
-                      className="w-full h-52 md:h-72 object-contain p-4 group-hover:scale-105 transition-transform duration-500"
+                      className="w-full h-52 md:h-72 object-cover rounded-xl p-1 group-hover:scale-105 transition-transform duration-500"
                       loading="lazy"
                     />
                   </div>

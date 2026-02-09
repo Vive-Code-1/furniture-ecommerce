@@ -1,112 +1,67 @@
 
-# Coupon/Discount Code System
 
-## Overview
-Add a complete coupon management system: admin can create/edit/delete coupons, and customers can apply coupon codes at checkout for percentage or fixed amount discounts with usage limits.
+# Fix Order Tracking - Sync with Real Database Data
 
-## 1. Database: New `coupons` Table
+## Problem
+The Order Track page currently uses **hardcoded fake tracking steps** with wrong statuses and dates. When a customer tracks their order, it shows "Confirmed", "Shipped" etc. even though the order is still "Pending". This is misleading.
 
-Create a `coupons` table with the following columns:
-- `id` (UUID, primary key)
-- `code` (TEXT, unique, not null) -- the coupon code customers enter
-- `discount_type` (TEXT, not null, default 'percentage') -- 'percentage' or 'fixed'
-- `discount_value` (NUMERIC, not null) -- e.g. 10 for 10% or 10 for $10
-- `min_order_amount` (NUMERIC, default 0) -- minimum cart total to use coupon
-- `max_uses` (INTEGER, nullable) -- total usage limit (null = unlimited)
-- `used_count` (INTEGER, default 0) -- how many times used
-- `is_active` (BOOLEAN, default true)
-- `expires_at` (TIMESTAMP WITH TIME ZONE, nullable)
-- `created_at` (TIMESTAMP WITH TIME ZONE, default now())
+For example, order `ORD-892976` is actually:
+- Status: **pending**
+- Date: **Feb 9, 2026**
 
-**RLS Policies:**
-- Admins: ALL access
-- Anyone: SELECT active coupons (needed for checkout validation)
+But the page shows it as already Confirmed, Shipped with fake dates from Feb 5-6.
 
-**Also:** Add `discount_amount` and `coupon_code` columns to the `orders` table to track applied discounts.
+## Solution
 
-**Database function:** Update `create_order` to accept `p_coupon_code` and `p_discount_amount` params, and increment `used_count` on the coupon.
+### 1. Create an `order_status_history` table
+A new database table to log every status change with its timestamp. When an admin changes an order's status in the admin panel, a record is automatically inserted.
 
-## 2. Admin Panel: Coupon Management Page
+| Column | Type | Description |
+|--------|------|-------------|
+| id | uuid | Primary key |
+| order_id | uuid | FK to orders |
+| status | text | Status name (pending, processing, shipped, etc.) |
+| changed_at | timestamptz | When the status changed |
 
-**New file:** `src/pages/admin/Coupons.tsx`
+A database trigger will automatically insert a history record whenever the `status` column in the `orders` table is updated.
 
-Features:
-- Table listing all coupons (code, type, value, usage, status, expiry)
-- "Add Coupon" button opens a dialog/form
-- Edit and delete actions per coupon
-- Toggle active/inactive status
-- Show used_count / max_uses
+### 2. Update OrderTrack page to fetch real data
+- When user clicks "Track", query the `orders` table by `order_number` to get the current status and order date
+- Query `order_status_history` to get all past status changes with real timestamps
+- Build the timeline dynamically from real data instead of hardcoded steps
+- Show the correct current status badge (e.g., "Pending" instead of "In Transit")
+- Show "Not found" message if the order number doesn't exist
 
-**Sidebar update:** Add "Coupons" link with `Tag` icon in `AdminSidebar.tsx` between "Reviews" and "Newsletter Leads".
+### 3. Auto-insert initial "pending" status for existing and new orders
+- Insert history records for all existing orders with their current status
+- The trigger will handle future orders automatically — when `create_order` inserts with status `pending`, the trigger fires and logs it
 
-**Route:** Add `/admin/coupons` route in `App.tsx`.
+### 4. Update Admin Orders page
+- When admin changes order status via the dropdown, the database trigger automatically logs the change — no frontend code change needed for logging
 
-## 3. Checkout: Coupon Input Field
-
-**File:** `src/pages/Checkout.tsx`
-
-Add a coupon section in the Order Summary card:
-- Input field + "Apply" button
-- On apply: query `coupons` table to validate code (active, not expired, under usage limit, meets min order)
-- Show discount line in the summary (between Subtotal and Delivery)
-- Recalculate `grandTotal` with discount applied
-- Pass `coupon_code` and `discount_amount` to `create_order` RPC
+## What Customers Will See
+- Only completed status steps (with real dates/times) will be shown as completed
+- Future steps will appear greyed out without dates
+- The status badge will reflect the actual current status
+- If order not found, an error message will be displayed
 
 ## Technical Details
 
-### Database Migration SQL
-```sql
-CREATE TABLE public.coupons (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  code TEXT UNIQUE NOT NULL,
-  discount_type TEXT NOT NULL DEFAULT 'percentage',
-  discount_value NUMERIC NOT NULL DEFAULT 0,
-  min_order_amount NUMERIC NOT NULL DEFAULT 0,
-  max_uses INTEGER,
-  used_count INTEGER NOT NULL DEFAULT 0,
-  is_active BOOLEAN NOT NULL DEFAULT true,
-  expires_at TIMESTAMP WITH TIME ZONE,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
-);
+**New migration SQL:**
+- Create `order_status_history` table with RLS policies (public read by order_number, admin full access)
+- Create trigger function `log_order_status_change()` on `orders` table
+- Seed existing orders into history table
 
-ALTER TABLE public.coupons ENABLE ROW LEVEL SECURITY;
+**Files to modify:**
+- `src/pages/OrderTrack.tsx` — Replace hardcoded data with real database queries
+- `src/integrations/supabase/types.ts` — Will auto-update after migration
 
-CREATE POLICY "Admins can manage coupons" ON public.coupons FOR ALL
-  USING (has_role(auth.uid(), 'admin'::app_role));
+**Status mapping for timeline:**
+| DB Status | Timeline Step | Icon |
+|-----------|--------------|------|
+| pending | Order Placed | Package |
+| processing | Confirmed | CheckCircle2 |
+| shipped | Shipped | Truck |
+| out_for_delivery | Out for Delivery | MapPin |
+| delivered | Delivered | CheckCircle2 |
 
-CREATE POLICY "Anyone can view active coupons" ON public.coupons FOR SELECT
-  USING (is_active = true);
-
--- Add tracking columns to orders
-ALTER TABLE public.orders
-  ADD COLUMN IF NOT EXISTS coupon_code TEXT,
-  ADD COLUMN IF NOT EXISTS discount_amount NUMERIC DEFAULT 0;
-```
-
-### Updated `create_order` Function
-Add parameters `p_coupon_code TEXT DEFAULT NULL` and `p_discount_amount NUMERIC DEFAULT 0`. Store them on the order row. If a coupon code is provided, increment `used_count` on the matching coupon.
-
-### Checkout Coupon Logic (Checkout.tsx)
-- New state: `couponCode`, `appliedCoupon`, `discount`
-- "Apply" handler queries coupons table by code, validates conditions
-- Discount calculation: percentage = `totalPrice * value / 100`, fixed = `value`
-- `grandTotal = totalPrice - discount + deliveryCharge`
-- "Remove" button to clear applied coupon
-
-### Admin Coupons Page (Coupons.tsx)
-- CRUD operations on `coupons` table
-- Dialog form with fields: code, discount_type (select), discount_value, min_order_amount, max_uses, expires_at, is_active
-- Table with columns: Code, Type, Value, Min Order, Usage, Status, Expires, Actions
-
-### AdminSidebar.tsx
-Add entry: `{ label: "Coupons", href: "/admin/coupons", icon: Tag }`
-
-### App.tsx
-Add route: `<Route path="coupons" element={<AdminCoupons />} />`
-
-## Files to Create/Modify
-1. **New migration** -- coupons table, order columns, updated create_order function
-2. **New:** `src/pages/admin/Coupons.tsx` -- admin coupon management
-3. **Modified:** `src/components/admin/AdminSidebar.tsx` -- add Coupons link
-4. **Modified:** `src/App.tsx` -- add coupon route
-5. **Modified:** `src/pages/Checkout.tsx` -- coupon input + discount logic

@@ -82,7 +82,7 @@ const Checkout = () => {
           body: {
             full_name: formData.name.trim(),
             email: formData.email.trim(),
-            amount: partialPayment.toFixed(2),
+            amount: grandTotal.toFixed(2),
             order_id: result.id,
             order_number: result.order_number,
             redirect_url: `${origin}/payment/success`,
@@ -254,7 +254,7 @@ const Checkout = () => {
                       <CreditCard className="w-5 h-5" />
                       <div className="text-left">
                         <p className="font-heading text-sm font-semibold">Online Payment</p>
-                        <p className="text-xs text-muted-foreground">Pay 10% now (${partialPayment.toFixed(2)})</p>
+                        <p className="text-xs text-muted-foreground">Pay full amount online</p>
                       </div>
                     </button>
                   </div>
@@ -296,12 +296,12 @@ const Checkout = () => {
                     </div>
                     {paymentMethod === "online" && (
                       <p className="text-xs text-muted-foreground mt-1">
-                        Pay now: ${partialPayment.toFixed(2)} (10%) • Remaining on delivery
+                        Full amount will be charged online
                       </p>
                     )}
                   </div>
                   <Button type="submit" className="w-full rounded-full mt-6" size="lg" disabled={loading}>
-                    {loading ? "Processing..." : paymentMethod === "cod" ? "Place Order (COD)" : `Pay $${partialPayment.toFixed(2)} & Order`}
+                    {loading ? "Processing..." : paymentMethod === "cod" ? "Place Order (COD)" : `Pay $${grandTotal.toFixed(2)} & Order`}
                   </Button>
                 </div>
               </motion.div>

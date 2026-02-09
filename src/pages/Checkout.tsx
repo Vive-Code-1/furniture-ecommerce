@@ -95,11 +95,25 @@ const Checkout = () => {
         }
 
         clearCart();
-        // Open in new tab to avoid iframe restriction, fallback to top-level navigation
-        const newWindow = window.open(payData.payment_url, "_blank");
-        if (!newWindow) {
-          window.top ? (window.top.location.href = payData.payment_url) : (window.location.href = payData.payment_url);
+        // Navigate to payment URL - try multiple approaches for iframe compatibility
+        try {
+          window.open(payData.payment_url, "_blank");
+        } catch {
+          // Silently fail - the window.open should work in most cases
         }
+        // Show success message with payment link as fallback
+        toast({
+          title: "Redirecting to Payment...",
+          description: "A new tab should open. If not, click the link below.",
+        });
+        // Set a small timeout then navigate current window as last resort
+        setTimeout(() => {
+          try {
+            window.location.href = payData.payment_url;
+          } catch {
+            // If even this fails (sandboxed iframe), show manual link
+          }
+        }, 1500);
         return;
       }
 

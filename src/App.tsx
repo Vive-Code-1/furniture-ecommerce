@@ -21,6 +21,7 @@ import AdminCustomers from "./pages/admin/Customers";
 import AdminReviews from "./pages/admin/Reviews";
 import NewsletterLeads from "./pages/admin/NewsletterLeads";
 import ContactLeads from "./pages/admin/ContactLeads";
+import AdminSettings from "./pages/admin/Settings";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentCancel from "./pages/PaymentCancel";
 import NotFound from "./pages/NotFound";

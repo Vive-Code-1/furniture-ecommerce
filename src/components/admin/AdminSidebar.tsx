@@ -26,6 +26,7 @@ const sidebarLinks = [
   { label: "Orders", href: "/admin/orders", icon: ShoppingCart },
   { label: "Customers", href: "/admin/customers", icon: Users },
   { label: "Reviews", href: "/admin/reviews", icon: Star },
+  { label: "Coupons", href: "/admin/coupons", icon: Tag },
   { label: "Newsletter Leads", href: "/admin/newsletter-leads", icon: Mail },
   { label: "Contact Leads", href: "/admin/contact-leads", icon: MessageSquare },
   { label: "Payment Gateway", href: "/admin/settings", icon: Settings },

@@ -21,6 +21,7 @@ import AdminCustomers from "./pages/admin/Customers";
 import AdminReviews from "./pages/admin/Reviews";
 import NewsletterLeads from "./pages/admin/NewsletterLeads";
 import ContactLeads from "./pages/admin/ContactLeads";
+import AdminSettings from "./pages/admin/Settings";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentCancel from "./pages/PaymentCancel";
 import NotFound from "./pages/NotFound";
@@ -52,6 +53,7 @@ const App = () => (
               <Route path="reviews" element={<AdminReviews />} />
               <Route path="newsletter-leads" element={<NewsletterLeads />} />
               <Route path="contact-leads" element={<ContactLeads />} />
+              <Route path="settings" element={<AdminSettings />} />
             </Route>
             <Route path="/payment/success" element={<PaymentSuccess />} />
             <Route path="/payment/cancel" element={<PaymentCancel />} />

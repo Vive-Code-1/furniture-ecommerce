@@ -6,16 +6,33 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+async function getSettings() {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const supabase = createClient(supabaseUrl, serviceRoleKey);
+
+  const { data } = await supabase
+    .from("site_settings")
+    .select("key, value")
+    .in("key", ["uddoktapay_api_key", "uddoktapay_base_url"]);
+
+  const settings: Record<string, string> = {};
+  data?.forEach((row: any) => { settings[row.key] = row.value; });
+
+  const apiKey = settings["uddoktapay_api_key"] || Deno.env.get("UDDOKTAPAY_API_KEY");
+  const baseUrl = settings["uddoktapay_base_url"] || Deno.env.get("UDDOKTAPAY_BASE_URL");
+
+  return { apiKey, baseUrl, supabaseUrl, serviceRoleKey };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const apiKey = Deno.env.get("UDDOKTAPAY_API_KEY");
+    const { apiKey, baseUrl, supabaseUrl, serviceRoleKey } = await getSettings();
     if (!apiKey) throw new Error("UDDOKTAPAY_API_KEY is not configured");
-
-    const baseUrl = Deno.env.get("UDDOKTAPAY_BASE_URL");
     if (!baseUrl) throw new Error("UDDOKTAPAY_BASE_URL is not configured");
 
     const { invoice_id } = await req.json();
@@ -40,8 +57,6 @@ Deno.serve(async (req) => {
     const data = await response.json();
 
     if (data.status === "COMPLETED" && data.metadata?.order_id) {
-      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
       const supabase = createClient(supabaseUrl, serviceRoleKey);
 
       await supabase

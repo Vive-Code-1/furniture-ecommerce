@@ -1,76 +1,105 @@
 
 
-# Admin Notification Panel - Dynamic Notifications
+# Fix Order Placement RLS Error
 
-## Overview
-Bell icon-এ ক্লিক করলে একটি dropdown panel খুলবে যেখানে সব ধরনের নতুন activities-এর summary দেখা যাবে -- নতুন অর্ডার, নতুন রিভিউ, নতুন নিউজলেটার সাবস্ক্রাইবার, এবং নতুন কন্টাক্ট মেসেজ। যতক্ষণ unread items থাকবে, ততক্ষণ Bell icon-এ লাল dot দেখাবে এবং মোট সংখ্যা দেখাবে।
+## Root Cause
 
-## How It Works
+The Checkout page uses `.insert({...}).select().single()` to create orders. PostgreSQL translates this into `INSERT ... RETURNING *`, which requires BOTH an INSERT policy AND a SELECT policy to match the new row.
 
-1. **Dynamic Red Badge**: Bell icon-এর উপরে একটি লাল badge থাকবে যেখানে মোট unread notification সংখ্যা দেখাবে। কোনো unread না থাকলে badge hide হবে।
+**Current SELECT policies for `orders`:**
+- `Users can view own orders` -- checks `user_id = auth.uid()`
 
-2. **Notification Panel**: Bell-এ ক্লিক করলে Popover dropdown খুলবে। এখানে ৪ ধরনের items দেখাবে:
-   - **New Orders** (pending status-এর অর্ডার) -- অর্ডার নম্বর, customer name, amount
-   - **New Reviews** (pending/unapproved reviews) -- reviewer name, rating, snippet
-   - **Newsletter Leads** (recent subscribers) -- email, date
-   - **Contact Messages** (unread contact form submissions) -- name, subject
+For guest (anonymous) users, `auth.uid()` is NULL, so `user_id = auth.uid()` evaluates to `NULL = NULL` which is **FALSE** in SQL. There is no SELECT policy that covers guest orders, causing the INSERT to be rolled back entirely.
 
-3. **Navigation**: প্রতিটি item-এ ক্লিক করলে সংশ্লিষ্ট admin page-এ redirect হবে (Orders, Reviews, Newsletter Leads, Contact Leads)
+## Solution: Database Function (SECURITY DEFINER)
 
-4. **Mark as Read**: "Mark all as read" button থাকবে (contact leads-এর `is_read` update হবে)। প্রতিটি section-এর পাশে "View All" link থাকবে।
+Instead of adding a broad SELECT policy that could expose guest order data, we will create a **server-side database function** that handles the entire order creation process. This function uses `SECURITY DEFINER` to bypass RLS, ensuring both guest and authenticated orders work reliably.
 
----
+### Step 1: Create Database Function (Migration)
 
-## Technical Details
+Create a function `create_order` that:
+- Accepts order details + items as JSON
+- Inserts into `orders` table
+- Inserts into `order_items` table
+- Returns the order ID and order number
+- Runs as `SECURITY DEFINER` (bypasses RLS safely)
 
-### New Component: `src/components/admin/NotificationPanel.tsx`
+```sql
+CREATE OR REPLACE FUNCTION public.create_order(
+  p_customer_name TEXT,
+  p_customer_email TEXT,
+  p_shipping_address TEXT,
+  p_total_amount NUMERIC,
+  p_user_id UUID DEFAULT NULL,
+  p_items JSONB DEFAULT '[]'
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_order_id UUID;
+  v_order_number TEXT;
+  v_item JSONB;
+BEGIN
+  INSERT INTO orders (customer_name, customer_email, shipping_address, total_amount, status, user_id)
+  VALUES (p_customer_name, p_customer_email, p_shipping_address, p_total_amount, 'pending', p_user_id)
+  RETURNING id, order_number INTO v_order_id, v_order_number;
 
-This component will:
-- Fetch counts and recent items from 4 tables:
-  - `orders` where `status = 'pending'` and `is_trashed = false`
-  - `reviews` where `is_approved = false`
-  - `newsletter_subscribers` (latest 5)
-  - `contact_leads` where `is_read = false`
-- Use Radix `Popover` component for the dropdown
-- Use `ScrollArea` for scrollable content
-- Group notifications by type with icons and color-coded badges
-- Include "View All" links that navigate using `react-router-dom`
+  FOR v_item IN SELECT * FROM jsonb_array_elements(p_items)
+  LOOP
+    INSERT INTO order_items (order_id, product_name, quantity, unit_price, product_id)
+    VALUES (
+      v_order_id,
+      v_item->>'product_name',
+      (v_item->>'quantity')::INTEGER,
+      (v_item->>'unit_price')::NUMERIC,
+      NULLIF(v_item->>'product_id', '')::UUID
+    );
+  END LOOP;
 
-### Modify: `src/pages/admin/Dashboard.tsx`
-
-- Replace the static Bell button (lines 87-90) with the new `NotificationPanel` component
-- Remove the hardcoded red dot and replace with dynamic count from the panel
-
-### Implementation Sequence
-
-1. Create `NotificationPanel.tsx` component with all data fetching and UI
-2. Update `Dashboard.tsx` to import and use the new component
-
-### Data Fetching Strategy
-
-Each notification type queries the database on panel open (not continuously polling), keeping things lightweight. The total unread count is fetched on component mount and refreshed every 30 seconds to keep the badge up to date.
-
-```text
-+------------------------------------------+
-|  Bell Icon [3]  <-- red badge with count  |
-+------------------------------------------+
-         |
-         v (click)
-+------------------------------------------+
-| Notifications                  Mark Read |
-|------------------------------------------|
-| ORDERS (2 pending)          View All ->  |
-|  - ORD-123456  John Doe    $150.00       |
-|  - ORD-789012  Jane Smith  $89.99        |
-|------------------------------------------|
-| REVIEWS (1 pending)         View All ->  |
-|  - Alice B.  ★★★★☆  "Great product..."  |
-|------------------------------------------|
-| NEWSLETTER (3 new)          View All ->  |
-|  - user@email.com  Feb 9, 2026           |
-|------------------------------------------|
-| CONTACTS (1 unread)         View All ->  |
-|  - Bob K.  "Product inquiry"             |
-+------------------------------------------+
+  RETURN jsonb_build_object('id', v_order_id, 'order_number', v_order_number);
+END;
+$$;
 ```
+
+### Step 2: Update Checkout.tsx
+
+Replace the two-step insert (orders + order_items) with a single RPC call:
+
+```typescript
+const { data: orderResult, error } = await supabase.rpc("create_order", {
+  p_customer_name: formData.name.trim(),
+  p_customer_email: formData.email.trim(),
+  p_shipping_address: shippingAddress,
+  p_total_amount: grandTotal,
+  p_user_id: user?.id || null,
+  p_items: JSON.stringify(orderItems),
+});
+```
+
+This eliminates the SELECT policy issue entirely because the function runs with elevated privileges.
+
+### Step 3: Also Add Guest SELECT Policy (for order tracking)
+
+Add a limited SELECT policy so guests can look up their orders by order number on the tracking page:
+
+```sql
+CREATE POLICY "Guest can view guest orders"
+  ON public.orders FOR SELECT TO anon
+  USING (user_id IS NULL);
+```
+
+## Files to Change
+
+1. **New migration** -- create the `create_order` database function + guest SELECT policy
+2. **`src/pages/Checkout.tsx`** -- replace direct insert calls with `supabase.rpc("create_order", ...)`
+
+## Benefits
+
+- Guest checkout and logged-in checkout both work reliably
+- No sensitive data exposed through overly broad SELECT policies
+- Single atomic transaction (if items insert fails, order is rolled back too)
+- Simpler frontend code (one RPC call instead of multiple inserts)
 

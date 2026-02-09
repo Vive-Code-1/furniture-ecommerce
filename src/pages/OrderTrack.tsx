@@ -1,19 +1,36 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Search, Package, Truck, CheckCircle2, Clock, MapPin, PartyPopper } from "lucide-react";
+import { Search, Package, Truck, CheckCircle2, Clock, MapPin, PartyPopper, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { useLocation } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
 
-const trackingSteps = [
-  { status: "Order Placed", description: "Your order has been confirmed", icon: Package, date: "Feb 5, 2026", time: "10:30 AM", completed: true },
-  { status: "Confirmed", description: "Order confirmed by warehouse", icon: CheckCircle2, date: "Feb 5, 2026", time: "2:15 PM", completed: true },
-  { status: "Shipped", description: "Package picked up by courier", icon: Truck, date: "Feb 6, 2026", time: "9:00 AM", completed: true },
-  { status: "Out for Delivery", description: "Your package is on its way", icon: MapPin, date: "Feb 8, 2026", time: "8:00 AM", completed: false },
-  { status: "Delivered", description: "Package delivered successfully", icon: CheckCircle2, date: "-", time: "-", completed: false },
+const STATUS_STEPS = [
+  { key: "pending", label: "Order Placed", description: "Your order has been placed", icon: Package },
+  { key: "processing", label: "Confirmed", description: "Order confirmed by warehouse", icon: CheckCircle2 },
+  { key: "shipped", label: "Shipped", description: "Package picked up by courier", icon: Truck },
+  { key: "out_for_delivery", label: "Out for Delivery", description: "Your package is on its way", icon: MapPin },
+  { key: "delivered", label: "Delivered", description: "Package delivered successfully", icon: CheckCircle2 },
 ];
+
+const statusBadgeMap: Record<string, { label: string; className: string }> = {
+  pending: { label: "Pending", className: "bg-amber-100 text-amber-700" },
+  processing: { label: "Processing", className: "bg-blue-100 text-blue-700" },
+  shipped: { label: "Shipped", className: "bg-violet-100 text-violet-700" },
+  out_for_delivery: { label: "Out for Delivery", className: "bg-orange-100 text-orange-700" },
+  delivered: { label: "Delivered", className: "bg-emerald-100 text-emerald-700" },
+  canceled: { label: "Canceled", className: "bg-red-100 text-red-700" },
+  returned: { label: "Returned", className: "bg-red-100 text-red-700" },
+};
+
+interface StatusHistory {
+  status: string;
+  changed_at: string;
+}
 
 const OrderTrack = () => {
   const location = useLocation();
@@ -21,16 +38,51 @@ const OrderTrack = () => {
   const [orderId, setOrderId] = useState(orderNumber || "");
   const [tracked, setTracked] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [notFound, setNotFound] = useState(false);
+  const [currentStatus, setCurrentStatus] = useState("");
+  const [historyMap, setHistoryMap] = useState<Record<string, string>>({});
 
-  const handleTrack = (e: React.FormEvent) => {
+  const handleTrack = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!orderId.trim()) return;
     setLoading(true);
-    setTimeout(() => {
-      setTracked(true);
+    setNotFound(false);
+    setTracked(false);
+
+    // Fetch order by order_number
+    const { data: order, error: orderError } = await supabase
+      .from("orders")
+      .select("id, status, order_number")
+      .eq("order_number", orderId.trim().toUpperCase())
+      .maybeSingle();
+
+    if (orderError || !order) {
+      setNotFound(true);
       setLoading(false);
-    }, 1000);
+      return;
+    }
+
+    // Fetch status history
+    const { data: history } = await supabase
+      .from("order_status_history" as any)
+      .select("status, changed_at")
+      .eq("order_id", order.id)
+      .order("changed_at", { ascending: true });
+
+    const map: Record<string, string> = {};
+    if (history) {
+      (history as unknown as StatusHistory[]).forEach((h) => {
+        map[h.status] = h.changed_at;
+      });
+    }
+
+    setCurrentStatus(order.status);
+    setHistoryMap(map);
+    setTracked(true);
+    setLoading(false);
   };
+
+  const badge = statusBadgeMap[currentStatus] || { label: currentStatus, className: "bg-secondary text-foreground" };
 
   return (
     <div className="min-h-screen bg-background">
@@ -41,7 +93,6 @@ const OrderTrack = () => {
             <h1 className="font-heading text-3xl md:text-5xl font-bold mb-4">Track Your Order</h1>
             <p className="text-muted-foreground">Enter your order ID to see the latest status and delivery updates.</p>
 
-            {/* Thank you + Order ID banner (shown after placing order) */}
             {orderNumber && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -89,6 +140,21 @@ const OrderTrack = () => {
             </Button>
           </motion.form>
 
+          {/* Not Found */}
+          {notFound && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-card rounded-2xl border border-border p-6 text-center"
+            >
+              <AlertCircle className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+              <p className="font-heading font-semibold text-lg">Order not found</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                No order found with ID <span className="font-semibold">{orderId.toUpperCase()}</span>. Please check and try again.
+              </p>
+            </motion.div>
+          )}
+
           {/* Tracking Result */}
           {tracked && (
             <motion.div
@@ -101,49 +167,52 @@ const OrderTrack = () => {
                   <p className="text-sm text-muted-foreground">Order ID</p>
                   <p className="font-heading font-bold text-lg">{orderId.toUpperCase()}</p>
                 </div>
-                <div className="flex items-center gap-2 bg-secondary text-foreground px-3 py-1 rounded-full text-sm font-medium">
+                <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${badge.className}`}>
                   <Clock className="w-3.5 h-3.5" />
-                  In Transit
+                  {badge.label}
                 </div>
               </div>
 
               {/* Timeline */}
               <div className="space-y-0">
-                {trackingSteps.map((step, index) => (
-                  <div key={step.status} className="flex gap-4">
-                    {/* Timeline Line */}
-                    <div className="flex flex-col items-center">
-                      <div
-                        className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
-                          step.completed
-                            ? "bg-foreground text-primary-foreground"
-                            : "bg-secondary text-muted-foreground"
-                        }`}
-                      >
-                        <step.icon className="w-4 h-4" />
-                      </div>
-                      {index < trackingSteps.length - 1 && (
+                {STATUS_STEPS.map((step, index) => {
+                  const completedAt = historyMap[step.key];
+                  const isCompleted = !!completedAt;
+
+                  return (
+                    <div key={step.key} className="flex gap-4">
+                      <div className="flex flex-col items-center">
                         <div
-                          className={`w-0.5 h-12 ${
-                            step.completed ? "bg-foreground" : "bg-border"
+                          className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
+                            isCompleted
+                              ? "bg-foreground text-primary-foreground"
+                              : "bg-secondary text-muted-foreground"
                           }`}
-                        />
-                      )}
-                    </div>
-                    {/* Content */}
-                    <div className="pb-8">
-                      <p className={`font-heading font-semibold ${!step.completed && "text-muted-foreground"}`}>
-                        {step.status}
-                      </p>
-                      <p className="text-sm text-muted-foreground">{step.description}</p>
-                      {step.completed && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {step.date} at {step.time}
+                        >
+                          <step.icon className="w-4 h-4" />
+                        </div>
+                        {index < STATUS_STEPS.length - 1 && (
+                          <div
+                            className={`w-0.5 h-12 ${
+                              isCompleted ? "bg-foreground" : "bg-border"
+                            }`}
+                          />
+                        )}
+                      </div>
+                      <div className="pb-8">
+                        <p className={`font-heading font-semibold ${!isCompleted && "text-muted-foreground"}`}>
+                          {step.label}
                         </p>
-                      )}
+                        <p className="text-sm text-muted-foreground">{step.description}</p>
+                        {isCompleted && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {format(new Date(completedAt), "MMM dd, yyyy")} at {format(new Date(completedAt), "hh:mm a")}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </motion.div>
           )}

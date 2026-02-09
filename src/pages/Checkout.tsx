@@ -82,9 +82,9 @@ const Checkout = () => {
       clearCart();
 
       if (user) {
-        navigate("/account");
+        navigate("/account", { state: { orderNumber: result.order_number } });
       } else {
-        navigate("/track-order");
+        navigate("/track-order", { state: { orderNumber: result.order_number } });
       }
     } catch (error: any) {
       toast({

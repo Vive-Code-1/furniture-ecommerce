@@ -82,7 +82,7 @@ const Checkout = () => {
           body: {
             full_name: formData.name.trim(),
             email: formData.email.trim(),
-            amount: partialPayment.toFixed(2),
+            amount: grandTotal.toFixed(2),
             order_id: result.id,
             order_number: result.order_number,
             redirect_url: `${origin}/payment/success`,

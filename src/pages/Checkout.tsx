@@ -301,7 +301,7 @@ const Checkout = () => {
                     )}
                   </div>
                   <Button type="submit" className="w-full rounded-full mt-6" size="lg" disabled={loading}>
-                    {loading ? "Processing..." : paymentMethod === "cod" ? "Place Order (COD)" : `Pay $${partialPayment.toFixed(2)} & Order`}
+                    {loading ? "Processing..." : paymentMethod === "cod" ? "Place Order (COD)" : `Pay $${grandTotal.toFixed(2)} & Order`}
                   </Button>
                 </div>
               </motion.div>

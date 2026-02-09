@@ -27,7 +27,7 @@ const sidebarLinks = [
   { label: "Reviews", href: "/admin/reviews", icon: Star },
   { label: "Newsletter Leads", href: "/admin/newsletter-leads", icon: Mail },
   { label: "Contact Leads", href: "/admin/contact-leads", icon: MessageSquare },
-  { label: "Settings", href: "/admin/settings", icon: Settings },
+  { label: "Payment Gateway", href: "/admin/settings", icon: Settings },
 ];
 
 const SidebarContent = ({ onClose }: { onClose?: () => void }) => {

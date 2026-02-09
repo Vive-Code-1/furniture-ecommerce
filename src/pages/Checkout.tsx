@@ -296,7 +296,7 @@ const Checkout = () => {
                     </div>
                     {paymentMethod === "online" && (
                       <p className="text-xs text-muted-foreground mt-1">
-                        Pay now: ${partialPayment.toFixed(2)} (10%) • Remaining on delivery
+                        Full amount will be charged online
                       </p>
                     )}
                   </div>

@@ -53,6 +53,8 @@ const App = () => (
               <Route path="newsletter-leads" element={<NewsletterLeads />} />
               <Route path="contact-leads" element={<ContactLeads />} />
             </Route>
+            <Route path="/payment/success" element={<PaymentSuccess />} />
+            <Route path="/payment/cancel" element={<PaymentCancel />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

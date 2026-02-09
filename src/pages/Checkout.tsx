@@ -254,7 +254,7 @@ const Checkout = () => {
                       <CreditCard className="w-5 h-5" />
                       <div className="text-left">
                         <p className="font-heading text-sm font-semibold">Online Payment</p>
-                        <p className="text-xs text-muted-foreground">Pay 10% now (${partialPayment.toFixed(2)})</p>
+                        <p className="text-xs text-muted-foreground">Pay full amount online</p>
                       </div>
                     </button>
                   </div>

@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Search, Package, Truck, CheckCircle2, Clock, MapPin } from "lucide-react";
+import { Search, Package, Truck, CheckCircle2, Clock, MapPin, PartyPopper } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import { useLocation } from "react-router-dom";
 
 const trackingSteps = [
   { status: "Order Placed", description: "Your order has been confirmed", icon: Package, date: "Feb 5, 2026", time: "10:30 AM", completed: true },
@@ -15,7 +16,9 @@ const trackingSteps = [
 ];
 
 const OrderTrack = () => {
-  const [orderId, setOrderId] = useState("");
+  const location = useLocation();
+  const orderNumber = (location.state as any)?.orderNumber as string | undefined;
+  const [orderId, setOrderId] = useState(orderNumber || "");
   const [tracked, setTracked] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -37,6 +40,30 @@ const OrderTrack = () => {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-10">
             <h1 className="font-heading text-3xl md:text-5xl font-bold mb-4">Track Your Order</h1>
             <p className="text-muted-foreground">Enter your order ID to see the latest status and delivery updates.</p>
+
+            {/* Thank you + Order ID banner (shown after placing order) */}
+            {orderNumber && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.2 }}
+                className="mt-6 bg-card border border-border rounded-2xl p-5 text-left"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <PartyPopper className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-heading font-bold text-lg">Thank you for your order! 🎉</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Your tracking ID is{" "}
+                      <span className="font-semibold text-foreground">{orderNumber}</span>.
+                      You can use this ID anytime to track your order status from here.
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
           </motion.div>
 
           {/* Search Form */}

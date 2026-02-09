@@ -121,6 +121,8 @@ const Checkout = () => {
         p_total_amount: grandTotal,
         p_user_id: user?.id || null,
         p_items: orderItems,
+        p_coupon_code: appliedCoupon?.code || null,
+        p_discount_amount: discount,
       });
 
       if (orderError) throw orderError;

@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
-import { Search, Bell } from "lucide-react";
+import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,6 +9,7 @@ import SalesChart from "@/components/admin/SalesChart";
 import ShipmentChart from "@/components/admin/ShipmentChart";
 import RecentOrders from "@/components/admin/RecentOrders";
 import SalesOverview from "@/components/admin/SalesOverview";
+import NotificationPanel from "@/components/admin/NotificationPanel";
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -84,10 +84,7 @@ const Dashboard = () => {
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input placeholder="Search..." className="pl-9 w-[240px] rounded-full bg-card" />
           </div>
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="w-5 h-5" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
-          </Button>
+          <NotificationPanel />
           <Avatar className="w-9 h-9">
             {profile?.avatar_url ? (
               <AvatarImage src={profile.avatar_url} alt={displayName} />

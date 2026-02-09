@@ -95,7 +95,11 @@ const Checkout = () => {
         }
 
         clearCart();
-        window.location.href = payData.payment_url;
+        // Open in new tab to avoid iframe restriction, fallback to top-level navigation
+        const newWindow = window.open(payData.payment_url, "_blank");
+        if (!newWindow) {
+          window.top ? (window.top.location.href = payData.payment_url) : (window.location.href = payData.payment_url);
+        }
         return;
       }
 

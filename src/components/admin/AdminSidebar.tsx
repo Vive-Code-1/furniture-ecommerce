@@ -10,6 +10,7 @@ import {
   X,
   ChevronRight,
   Star,
+  Tag,
   Mail,
   MessageSquare,
   Settings,

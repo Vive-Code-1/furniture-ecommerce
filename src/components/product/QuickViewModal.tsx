@@ -24,7 +24,7 @@ interface QuickViewModalProps {
 const QuickViewModal = ({ product, open, onOpenChange }: QuickViewModalProps) => {
   const [quantity, setQuantity] = useState(1);
   const [reviews, setReviews] = useState<Review[]>([]);
-  const { addItem } = useCart();
+  const { addItem, setIsCartOpen } = useCart();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -150,6 +150,7 @@ const QuickViewModal = ({ product, open, onOpenChange }: QuickViewModalProps) =>
                   }
                   setQuantity(1);
                   onOpenChange(false);
+                  setIsCartOpen(false);
                   navigate("/checkout");
                 }}
               >

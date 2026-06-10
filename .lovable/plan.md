@@ -1,76 +1,57 @@
+# Fix Bugs in `src/pages/OrderTrack.tsx`
 
+## Bugs Found
 
-# Admin Notification Panel - Dynamic Notifications
+### 1. Logic bug (critical) — Hardcoded fake tracking data
+`trackingSteps` is a static array with fixed statuses, dates (Feb 5–8, 2026) and `completed` flags. Every order shown returns the same fake timeline regardless of the real order in the DB. The "In Transit" badge is also hardcoded.
 
-## Overview
-Bell icon-এ ক্লিক করলে একটি dropdown panel খুলবে যেখানে সব ধরনের নতুন activities-এর summary দেখা যাবে -- নতুন অর্ডার, নতুন রিভিউ, নতুন নিউজলেটার সাবস্ক্রাইবার, এবং নতুন কন্টাক্ট মেসেজ। যতক্ষণ unread items থাকবে, ততক্ষণ Bell icon-এ লাল dot দেখাবে এবং মোট সংখ্যা দেখাবে।
+### 2. Logic bug — Fake `setTimeout` "tracking"
+`handleTrack` just waits 1s then sets `tracked=true`. It never validates the order number or fetches anything. Invalid IDs still show a "successful" track result.
 
-## How It Works
+### 3. Markup/a11y bug — Missing label on the search input
+The Input has only a placeholder, no associated `<label>` (even visually hidden). Screen readers announce nothing.
 
-1. **Dynamic Red Badge**: Bell icon-এর উপরে একটি লাল badge থাকবে যেখানে মোট unread notification সংখ্যা দেখাবে। কোনো unread না থাকলে badge hide হবে।
+### 4. Markup bug — `<step.icon>` is non-standard JSX
+Rendering a lowercase tag from an object property (`step.icon`) makes React treat it as an HTML element, not a component. It must be assigned to a capitalized variable (`const Icon = step.icon; <Icon />`) to render correctly as a component.
 
-2. **Notification Panel**: Bell-এ ক্লিক করলে Popover dropdown খুলবে। এখানে ৪ ধরনের items দেখাবে:
-   - **New Orders** (pending status-এর অর্ডার) -- অর্ডার নম্বর, customer name, amount
-   - **New Reviews** (pending/unapproved reviews) -- reviewer name, rating, snippet
-   - **Newsletter Leads** (recent subscribers) -- email, date
-   - **Contact Messages** (unread contact form submissions) -- name, subject
+### 5. CSS bug — Last timeline item has extra bottom padding
+Every `.pb-8` is applied unconditionally, including on the final step, leaving dead space at the bottom of the card.
 
-3. **Navigation**: প্রতিটি item-এ ক্লিক করলে সংশ্লিষ্ট admin page-এ redirect হবে (Orders, Reviews, Newsletter Leads, Contact Leads)
+### 6. CSS/className bug — Conditional string with `&&` short-circuit
+`className={\`... ${!step.completed && "text-muted-foreground"}\`}` produces the string `"... false"` when the step is completed, injecting a literal `false` class. Should use ternary returning `""`.
 
-4. **Mark as Read**: "Mark all as read" button থাকবে (contact leads-এর `is_read` update হবে)। প্রতিটি section-এর পাশে "View All" link থাকবে।
+### 7. Logic bug — Form blocks legitimate submit while loading but `required` triggers native validation on empty
+Combined with the early `return` for empty input, the native required popup fires unexpectedly. Drop `required` (handled in JS) or keep one, not both.
 
----
+## Fix Plan
 
-## Technical Details
+1. **Wire to real DB**
+   - On submit, query `orders` by `order_number` (uppercased, trimmed).
+   - Query `order_status_history` for that order, ordered by `changed_at` ASC.
+   - Map DB statuses → step config:
+     | DB status | Label | Icon |
+     |---|---|---|
+     | pending | Order Placed | Package |
+     | processing | Confirmed | CheckCircle2 |
+     | shipped | Shipped | Truck |
+     | out_for_delivery | Out for Delivery | MapPin |
+     | delivered | Delivered | CheckCircle2 |
+   - Mark a step `completed` only if a history row exists for it; attach the real `changed_at` date/time.
+   - Show the order's current status in the badge (Pending / Processing / Shipped / Out for Delivery / Delivered) with an appropriate icon and color.
+   - If no order is found, show a friendly "Order not found" message instead of the timeline.
 
-### New Component: `src/components/admin/NotificationPanel.tsx`
+2. **Fix markup/CSS issues**
+   - Assign `const Icon = step.icon` before rendering.
+   - Replace `${!step.completed && "..."}` with a ternary.
+   - Apply `pb-8` only to non-last steps (or use `last:pb-0`).
+   - Add `<label htmlFor>` (sr-only) for the order input; give the input an `id`.
 
-This component will:
-- Fetch counts and recent items from 4 tables:
-  - `orders` where `status = 'pending'` and `is_trashed = false`
-  - `reviews` where `is_approved = false`
-  - `newsletter_subscribers` (latest 5)
-  - `contact_leads` where `is_read = false`
-- Use Radix `Popover` component for the dropdown
-- Use `ScrollArea` for scrollable content
-- Group notifications by type with icons and color-coded badges
-- Include "View All" links that navigate using `react-router-dom`
+3. **Verify**
+   - Test with real order `ORD-892976` (currently pending) — should show only "Order Placed" as completed with its actual `created_at` time, badge = "Pending", no fake Feb 5/6 dates.
+   - Test with a non-existent order ID — should show "not found" state.
 
-### Modify: `src/pages/admin/Dashboard.tsx`
+## Files Touched
+- `src/pages/OrderTrack.tsx` — only file.
 
-- Replace the static Bell button (lines 87-90) with the new `NotificationPanel` component
-- Remove the hardcoded red dot and replace with dynamic count from the panel
-
-### Implementation Sequence
-
-1. Create `NotificationPanel.tsx` component with all data fetching and UI
-2. Update `Dashboard.tsx` to import and use the new component
-
-### Data Fetching Strategy
-
-Each notification type queries the database on panel open (not continuously polling), keeping things lightweight. The total unread count is fetched on component mount and refreshed every 30 seconds to keep the badge up to date.
-
-```text
-+------------------------------------------+
-|  Bell Icon [3]  <-- red badge with count  |
-+------------------------------------------+
-         |
-         v (click)
-+------------------------------------------+
-| Notifications                  Mark Read |
-|------------------------------------------|
-| ORDERS (2 pending)          View All ->  |
-|  - ORD-123456  John Doe    $150.00       |
-|  - ORD-789012  Jane Smith  $89.99        |
-|------------------------------------------|
-| REVIEWS (1 pending)         View All ->  |
-|  - Alice B.  ★★★★☆  "Great product..."  |
-|------------------------------------------|
-| NEWSLETTER (3 new)          View All ->  |
-|  - user@email.com  Feb 9, 2026           |
-|------------------------------------------|
-| CONTACTS (1 unread)         View All ->  |
-|  - Bob K.  "Product inquiry"             |
-+------------------------------------------+
-```
-
+## Out of Scope
+- The DB trigger / `order_status_history` table already exists (per prior migration). No new SQL is needed. If the table is missing on your environment we'll add it as a follow-up.

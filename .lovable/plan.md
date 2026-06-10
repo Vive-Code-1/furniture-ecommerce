@@ -1,67 +1,57 @@
+# Fix Bugs in `src/pages/OrderTrack.tsx`
 
+## Bugs Found
 
-# Fix Order Tracking - Sync with Real Database Data
+### 1. Logic bug (critical) — Hardcoded fake tracking data
+`trackingSteps` is a static array with fixed statuses, dates (Feb 5–8, 2026) and `completed` flags. Every order shown returns the same fake timeline regardless of the real order in the DB. The "In Transit" badge is also hardcoded.
 
-## Problem
-The Order Track page currently uses **hardcoded fake tracking steps** with wrong statuses and dates. When a customer tracks their order, it shows "Confirmed", "Shipped" etc. even though the order is still "Pending". This is misleading.
+### 2. Logic bug — Fake `setTimeout` "tracking"
+`handleTrack` just waits 1s then sets `tracked=true`. It never validates the order number or fetches anything. Invalid IDs still show a "successful" track result.
 
-For example, order `ORD-892976` is actually:
-- Status: **pending**
-- Date: **Feb 9, 2026**
+### 3. Markup/a11y bug — Missing label on the search input
+The Input has only a placeholder, no associated `<label>` (even visually hidden). Screen readers announce nothing.
 
-But the page shows it as already Confirmed, Shipped with fake dates from Feb 5-6.
+### 4. Markup bug — `<step.icon>` is non-standard JSX
+Rendering a lowercase tag from an object property (`step.icon`) makes React treat it as an HTML element, not a component. It must be assigned to a capitalized variable (`const Icon = step.icon; <Icon />`) to render correctly as a component.
 
-## Solution
+### 5. CSS bug — Last timeline item has extra bottom padding
+Every `.pb-8` is applied unconditionally, including on the final step, leaving dead space at the bottom of the card.
 
-### 1. Create an `order_status_history` table
-A new database table to log every status change with its timestamp. When an admin changes an order's status in the admin panel, a record is automatically inserted.
+### 6. CSS/className bug — Conditional string with `&&` short-circuit
+`className={\`... ${!step.completed && "text-muted-foreground"}\`}` produces the string `"... false"` when the step is completed, injecting a literal `false` class. Should use ternary returning `""`.
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | uuid | Primary key |
-| order_id | uuid | FK to orders |
-| status | text | Status name (pending, processing, shipped, etc.) |
-| changed_at | timestamptz | When the status changed |
+### 7. Logic bug — Form blocks legitimate submit while loading but `required` triggers native validation on empty
+Combined with the early `return` for empty input, the native required popup fires unexpectedly. Drop `required` (handled in JS) or keep one, not both.
 
-A database trigger will automatically insert a history record whenever the `status` column in the `orders` table is updated.
+## Fix Plan
 
-### 2. Update OrderTrack page to fetch real data
-- When user clicks "Track", query the `orders` table by `order_number` to get the current status and order date
-- Query `order_status_history` to get all past status changes with real timestamps
-- Build the timeline dynamically from real data instead of hardcoded steps
-- Show the correct current status badge (e.g., "Pending" instead of "In Transit")
-- Show "Not found" message if the order number doesn't exist
+1. **Wire to real DB**
+   - On submit, query `orders` by `order_number` (uppercased, trimmed).
+   - Query `order_status_history` for that order, ordered by `changed_at` ASC.
+   - Map DB statuses → step config:
+     | DB status | Label | Icon |
+     |---|---|---|
+     | pending | Order Placed | Package |
+     | processing | Confirmed | CheckCircle2 |
+     | shipped | Shipped | Truck |
+     | out_for_delivery | Out for Delivery | MapPin |
+     | delivered | Delivered | CheckCircle2 |
+   - Mark a step `completed` only if a history row exists for it; attach the real `changed_at` date/time.
+   - Show the order's current status in the badge (Pending / Processing / Shipped / Out for Delivery / Delivered) with an appropriate icon and color.
+   - If no order is found, show a friendly "Order not found" message instead of the timeline.
 
-### 3. Auto-insert initial "pending" status for existing and new orders
-- Insert history records for all existing orders with their current status
-- The trigger will handle future orders automatically — when `create_order` inserts with status `pending`, the trigger fires and logs it
+2. **Fix markup/CSS issues**
+   - Assign `const Icon = step.icon` before rendering.
+   - Replace `${!step.completed && "..."}` with a ternary.
+   - Apply `pb-8` only to non-last steps (or use `last:pb-0`).
+   - Add `<label htmlFor>` (sr-only) for the order input; give the input an `id`.
 
-### 4. Update Admin Orders page
-- When admin changes order status via the dropdown, the database trigger automatically logs the change — no frontend code change needed for logging
+3. **Verify**
+   - Test with real order `ORD-892976` (currently pending) — should show only "Order Placed" as completed with its actual `created_at` time, badge = "Pending", no fake Feb 5/6 dates.
+   - Test with a non-existent order ID — should show "not found" state.
 
-## What Customers Will See
-- Only completed status steps (with real dates/times) will be shown as completed
-- Future steps will appear greyed out without dates
-- The status badge will reflect the actual current status
-- If order not found, an error message will be displayed
+## Files Touched
+- `src/pages/OrderTrack.tsx` — only file.
 
-## Technical Details
-
-**New migration SQL:**
-- Create `order_status_history` table with RLS policies (public read by order_number, admin full access)
-- Create trigger function `log_order_status_change()` on `orders` table
-- Seed existing orders into history table
-
-**Files to modify:**
-- `src/pages/OrderTrack.tsx` — Replace hardcoded data with real database queries
-- `src/integrations/supabase/types.ts` — Will auto-update after migration
-
-**Status mapping for timeline:**
-| DB Status | Timeline Step | Icon |
-|-----------|--------------|------|
-| pending | Order Placed | Package |
-| processing | Confirmed | CheckCircle2 |
-| shipped | Shipped | Truck |
-| out_for_delivery | Out for Delivery | MapPin |
-| delivered | Delivered | CheckCircle2 |
-
+## Out of Scope
+- The DB trigger / `order_status_history` table already exists (per prior migration). No new SQL is needed. If the table is missing on your environment we'll add it as a follow-up.

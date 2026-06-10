@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Truck, CreditCard, Banknote, Tag, X } from "lucide-react";
+import { ArrowLeft, Truck, CreditCard, Banknote } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCart } from "@/contexts/CartContext";
@@ -18,9 +18,6 @@ const Checkout = () => {
   const navigate = useNavigate();
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "online">("cod");
   const [loading, setLoading] = useState(false);
-  const [couponCode, setCouponCode] = useState("");
-  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount_type: string; discount_value: number } | null>(null);
-  const [couponLoading, setCouponLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -32,57 +29,8 @@ const Checkout = () => {
   });
 
   const deliveryCharge = 15;
-
-  const discount = appliedCoupon
-    ? appliedCoupon.discount_type === "percentage"
-      ? totalPrice * appliedCoupon.discount_value / 100
-      : Math.min(appliedCoupon.discount_value, totalPrice)
-    : 0;
-
-  const grandTotal = totalPrice - discount + deliveryCharge;
-
-  const handleApplyCoupon = async () => {
-    if (!couponCode.trim()) return;
-    setCouponLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from("coupons")
-        .select("*")
-        .eq("code", couponCode.trim().toUpperCase())
-        .eq("is_active", true)
-        .maybeSingle();
-
-      if (error) throw error;
-      if (!data) {
-        toast({ title: "Invalid Coupon", description: "This coupon code doesn't exist or is inactive.", variant: "destructive" });
-        return;
-      }
-      if (data.expires_at && new Date(data.expires_at) < new Date()) {
-        toast({ title: "Expired Coupon", description: "This coupon has expired.", variant: "destructive" });
-        return;
-      }
-      if (data.max_uses && data.used_count >= data.max_uses) {
-        toast({ title: "Usage Limit", description: "This coupon has reached its usage limit.", variant: "destructive" });
-        return;
-      }
-      if (totalPrice < data.min_order_amount) {
-        toast({ title: "Minimum Not Met", description: `Minimum order of $${data.min_order_amount} required.`, variant: "destructive" });
-        return;
-      }
-
-      setAppliedCoupon({ code: data.code, discount_type: data.discount_type, discount_value: data.discount_value });
-      toast({ title: "Coupon Applied!", description: `${data.discount_type === "percentage" ? `${data.discount_value}%` : `$${data.discount_value}`} discount applied.` });
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
-    } finally {
-      setCouponLoading(false);
-    }
-  };
-
-  const removeCoupon = () => {
-    setAppliedCoupon(null);
-    setCouponCode("");
-  };
+  const grandTotal = totalPrice + deliveryCharge;
+  const partialPayment = Math.max(totalPrice * 0.1, deliveryCharge);
 
   const updateField = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -95,6 +43,22 @@ const Checkout = () => {
     try {
       const shippingAddress = `${formData.address}, ${formData.city}, ${formData.zip}, ${formData.country}`;
 
+      // Create the order in the database
+      const { data: orderData, error: orderError } = await supabase
+        .from("orders")
+        .insert({
+          customer_name: formData.name.trim(),
+          customer_email: formData.email.trim(),
+          shipping_address: shippingAddress,
+          total_amount: grandTotal,
+          status: "pending",
+          user_id: user?.id || null,
+        })
+        .select()
+        .single();
+
+      if (orderError) throw orderError;
+
       // Look up product IDs by name from the database
       const productNames = items.map((item) => item.name);
       const { data: dbProducts } = await supabase
@@ -105,83 +69,31 @@ const Checkout = () => {
       const nameToId: Record<string, string> = {};
       dbProducts?.forEach((p) => { nameToId[p.name] = p.id; });
 
-      // Build order items payload
+      // Insert order items with matched product_id
       const orderItems = items.map((item) => ({
+        order_id: orderData.id,
         product_name: item.name,
         quantity: item.quantity,
         unit_price: item.price,
         product_id: nameToId[item.name] || null,
       }));
 
-      // Create order atomically via SECURITY DEFINER function
-      const { data: orderResult, error: orderError } = await supabase.rpc("create_order", {
-        p_customer_name: formData.name.trim(),
-        p_customer_email: formData.email.trim(),
-        p_shipping_address: shippingAddress,
-        p_total_amount: grandTotal,
-        p_user_id: user?.id || null,
-        p_items: orderItems,
-        p_coupon_code: appliedCoupon?.code || null,
-        p_discount_amount: discount,
-      });
+      const { error: itemsError } = await supabase
+        .from("order_items")
+        .insert(orderItems);
 
-      if (orderError) throw orderError;
+      if (itemsError) throw itemsError;
 
-      const result = orderResult as { id: string; order_number: string };
-
-      if (paymentMethod === "online") {
-        // Online payment: call UddoktaPay checkout
-        const origin = window.location.origin;
-        const { data: payData, error: payError } = await supabase.functions.invoke("uddoktapay-checkout", {
-          body: {
-            full_name: formData.name.trim(),
-            email: formData.email.trim(),
-            amount: grandTotal.toFixed(2),
-            order_id: result.id,
-            order_number: result.order_number,
-            redirect_url: `${origin}/payment/success`,
-            cancel_url: `${origin}/payment/cancel`,
-          },
-        });
-
-        if (payError || !payData?.payment_url) {
-          throw new Error(payData?.error || payError?.message || "Payment gateway error");
-        }
-
-        clearCart();
-        // Navigate to payment URL - try multiple approaches for iframe compatibility
-        try {
-          window.open(payData.payment_url, "_blank");
-        } catch {
-          // Silently fail - the window.open should work in most cases
-        }
-        // Show success message with payment link as fallback
-        toast({
-          title: "Redirecting to Payment...",
-          description: "A new tab should open. If not, click the link below.",
-        });
-        // Set a small timeout then navigate current window as last resort
-        setTimeout(() => {
-          try {
-            window.location.href = payData.payment_url;
-          } catch {
-            // If even this fails (sandboxed iframe), show manual link
-          }
-        }, 1500);
-        return;
-      }
-
-      // COD flow
       toast({
         title: "Order Placed Successfully!",
-        description: `Your order ${result.order_number} has been confirmed. Pay on delivery.`,
+        description: `Your order ${orderData.order_number} has been confirmed. ${paymentMethod === "cod" ? "Pay on delivery." : ""}`,
       });
       clearCart();
 
       if (user) {
-        navigate("/account", { state: { orderNumber: result.order_number } });
+        navigate("/account");
       } else {
-        navigate("/track-order", { state: { orderNumber: result.order_number } });
+        navigate("/track-order");
       }
     } catch (error: any) {
       toast({
@@ -308,7 +220,7 @@ const Checkout = () => {
                       <CreditCard className="w-5 h-5" />
                       <div className="text-left">
                         <p className="font-heading text-sm font-semibold">Online Payment</p>
-                        <p className="text-xs text-muted-foreground">Pay full amount online</p>
+                        <p className="text-xs text-muted-foreground">Pay 10% now (${partialPayment.toFixed(2)})</p>
                       </div>
                     </button>
                   </div>
@@ -335,48 +247,11 @@ const Checkout = () => {
                       </div>
                     ))}
                   </div>
-
-                  {/* Coupon Code */}
-                  <div className="border-t border-border pt-4">
-                    {appliedCoupon ? (
-                      <div className="flex items-center justify-between bg-primary/10 rounded-xl px-3 py-2">
-                        <div className="flex items-center gap-2">
-                          <Tag className="w-4 h-4 text-primary" />
-                          <span className="text-sm font-medium">{appliedCoupon.code}</span>
-                          <span className="text-xs text-muted-foreground">
-                            (-{appliedCoupon.discount_type === "percentage" ? `${appliedCoupon.discount_value}%` : `$${appliedCoupon.discount_value}`})
-                          </span>
-                        </div>
-                        <button type="button" onClick={removeCoupon} className="text-muted-foreground hover:text-foreground">
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex gap-2">
-                        <Input
-                          placeholder="Coupon code"
-                          value={couponCode}
-                          onChange={(e) => setCouponCode(e.target.value)}
-                          className="rounded-xl bg-secondary border-border uppercase text-sm"
-                        />
-                        <Button type="button" variant="outline" onClick={handleApplyCoupon} disabled={couponLoading} className="rounded-xl shrink-0">
-                          {couponLoading ? "..." : "Apply"}
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-
                   <div className="border-t border-border pt-4 space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Subtotal</span>
                       <span>${totalPrice.toFixed(2)}</span>
                     </div>
-                    {discount > 0 && (
-                      <div className="flex justify-between text-sm text-primary">
-                        <span>Discount</span>
-                        <span>-${discount.toFixed(2)}</span>
-                      </div>
-                    )}
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Delivery</span>
                       <span>${deliveryCharge.toFixed(2)}</span>
@@ -387,12 +262,12 @@ const Checkout = () => {
                     </div>
                     {paymentMethod === "online" && (
                       <p className="text-xs text-muted-foreground mt-1">
-                        Full amount will be charged online
+                        Pay now: ${partialPayment.toFixed(2)} (10%) • Remaining on delivery
                       </p>
                     )}
                   </div>
                   <Button type="submit" className="w-full rounded-full mt-6" size="lg" disabled={loading}>
-                    {loading ? "Processing..." : paymentMethod === "cod" ? "Place Order (COD)" : `Pay $${grandTotal.toFixed(2)} & Order`}
+                    {loading ? "Processing..." : paymentMethod === "cod" ? "Place Order (COD)" : `Pay $${partialPayment.toFixed(2)} & Order`}
                   </Button>
                 </div>
               </motion.div>

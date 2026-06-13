@@ -17,7 +17,7 @@ const QualityBanner = () => {
         >
           <img
             src={bannerImage}
-            alt="Premium furniture interior"
+            alt="Premium Modulive furniture styled in a modern interior"
             width={1600}
             height={640}
             loading="lazy"

@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import SEO from "@/components/SEO";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import TrackForm from "@/components/order-track/TrackForm";
@@ -11,6 +12,12 @@ const OrderTrack = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Track Your Order — Modulive Furniture Delivery Status"
+        description="Enter your order ID to see real-time delivery updates and estimated arrival for your Modulive furniture order."
+        path="/track-order"
+        noindex
+      />
       <Navbar />
       <main className="pt-24 pb-12 md:pt-32 md:pb-20">
         <div className="container mx-auto max-w-2xl">

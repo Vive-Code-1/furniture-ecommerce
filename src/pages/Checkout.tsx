@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Link, useNavigate } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import SEO from "@/components/SEO";
 
 const Checkout = () => {
   const { items, totalPrice, clearCart } = useCart();
@@ -128,6 +129,12 @@ const Checkout = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Checkout — Modulive"
+        description="Complete your Modulive furniture order securely."
+        path="/checkout"
+        noindex
+      />
       <Navbar />
       <main className="pt-24 pb-12 md:pt-32 md:pb-20">
         <div className="container mx-auto">

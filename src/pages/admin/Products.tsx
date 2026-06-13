@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { isSafeImageUrl } from "@/lib/validators";
 
 interface Product {
   id: string;
@@ -105,6 +106,10 @@ const AdminProducts = () => {
   const handleSave = async () => {
     if (!editingProduct.name.trim() || !editingProduct.category.trim()) {
       toast({ title: "Error", description: "Name and category are required.", variant: "destructive" });
+      return;
+    }
+    if (!isSafeImageUrl(editingProduct.thumbnail_url)) {
+      toast({ title: "Invalid image URL", description: "Use an https:// or http:// URL.", variant: "destructive" });
       return;
     }
 

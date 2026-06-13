@@ -11,6 +11,7 @@ import { Link, useNavigate } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import SEO from "@/components/SEO";
+import { checkoutSchema } from "@/lib/validators";
 
 const Checkout = () => {
   const { items, totalPrice, clearCart } = useCart();
@@ -39,16 +40,31 @@ const Checkout = () => {
 
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Client-side validation (server still re-validates prices/coupons)
+    const parsed = checkoutSchema.safeParse(formData);
+    if (!parsed.success) {
+      const first = parsed.error.errors[0];
+      toast({
+        title: "Please check the form",
+        description: first?.message ?? "Invalid input",
+        variant: "destructive",
+      });
+      return;
+    }
+    const valid = parsed.data;
+
     setLoading(true);
 
     try {
-      const shippingAddress = `${formData.address}, ${formData.city}, ${formData.zip}, ${formData.country}`;
+      const shippingAddress = `${valid.address}, ${valid.city}, ${valid.zip}, ${valid.country}`;
 
       // Server computes prices, delivery, discount and total from the DB.
       // Only product_id + quantity are trusted from the client.
       const { data, error } = await supabase.rpc("create_order", {
-        p_customer_name: formData.name.trim(),
-        p_customer_email: formData.email.trim(),
+        p_customer_name: valid.name,
+        p_customer_email: valid.email,
+        p_customer_phone: valid.phone,
         p_shipping_address: shippingAddress,
         p_user_id: user?.id ?? null,
         p_items: items.map((item) => ({

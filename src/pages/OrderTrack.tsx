@@ -29,8 +29,10 @@ const OrderTrack = () => {
 
           <TrackForm loading={loading} onTrack={track} />
 
-          {error && <TrackingError message={error} />}
-          {result && <TrackingResult result={result} />}
+          {error && <TrackingError key={`err-${error}`} message={error} />}
+          {result && (
+            <TrackingResult key={`res-${result.orderNumber}`} result={result} />
+          )}
         </div>
       </main>
       <Footer />

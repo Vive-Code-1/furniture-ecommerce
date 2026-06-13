@@ -5,22 +5,24 @@ const Footer = () => {
     <footer className="bg-foreground text-primary-foreground">
       <div className="container mx-auto py-12 md:py-16">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
-          {/* Service */}
+          {/* Shop */}
           <div>
-            <h4 className="font-heading text-sm font-semibold mb-4 opacity-70">Service</h4>
+            <h4 className="font-heading text-sm font-semibold mb-4 opacity-70">Shop</h4>
             <ul className="space-y-2">
-              <li><Link to="/legal" className="text-sm opacity-60 hover:opacity-100 transition-opacity">Legal Policy</Link></li>
-              <li><Link to="/privacy" className="text-sm opacity-60 hover:opacity-100 transition-opacity">Data Protection</Link></li>
-              <li><Link to="/track-order" className="text-sm opacity-60 hover:opacity-100 transition-opacity">Order Tracking</Link></li>
+              <li><Link to="/products" className="text-sm opacity-60 hover:opacity-100 transition-opacity">All Furniture</Link></li>
+              <li><Link to="/products?category=Sofa" className="text-sm opacity-60 hover:opacity-100 transition-opacity">Sofas</Link></li>
+              <li><Link to="/products?category=Chair" className="text-sm opacity-60 hover:opacity-100 transition-opacity">Chairs</Link></li>
+              <li><Link to="/products?category=Bed" className="text-sm opacity-60 hover:opacity-100 transition-opacity">Beds</Link></li>
             </ul>
           </div>
 
-          {/* Newsletter */}
+          {/* Company */}
           <div>
-            <h4 className="font-heading text-sm font-semibold mb-4 opacity-70">Newsletter</h4>
+            <h4 className="font-heading text-sm font-semibold mb-4 opacity-70">Company</h4>
             <ul className="space-y-2">
-              <li><Link to="/articles" className="text-sm opacity-60 hover:opacity-100 transition-opacity">Print Your Articles</Link></li>
-              <li><Link to="/signup" className="text-sm opacity-60 hover:opacity-100 transition-opacity">Sign Up</Link></li>
+              <li><Link to="/about" className="text-sm opacity-60 hover:opacity-100 transition-opacity">About Modulive</Link></li>
+              <li><Link to="/contact" className="text-sm opacity-60 hover:opacity-100 transition-opacity">Contact</Link></li>
+              <li><Link to="/track-order" className="text-sm opacity-60 hover:opacity-100 transition-opacity">Order Tracking</Link></li>
             </ul>
           </div>
 

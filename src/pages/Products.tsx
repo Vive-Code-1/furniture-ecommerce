@@ -77,6 +77,30 @@ const Products = () => {
     </div>
   );
 
+  const SITE = "https://furniture-ecommerce.lovable.app";
+  const productItems = filteredProducts.slice(0, 30).map((p, i) => ({
+    "@type": "ListItem",
+    position: i + 1,
+    item: {
+      "@type": "Product",
+      name: p.name,
+      image: p.image,
+      description: p.description ?? `${p.name} — premium ${p.category.toLowerCase()} by Modulive.`,
+      category: p.category,
+      brand: { "@type": "Brand", name: "Modulive" },
+      offers: {
+        "@type": "Offer",
+        price: p.price.toFixed(2),
+        priceCurrency: "USD",
+        availability:
+          p.stock_quantity > 0
+            ? "https://schema.org/InStock"
+            : "https://schema.org/OutOfStock",
+        url: `${SITE}/products`,
+      },
+    },
+  }));
+
   return (
     <div className="min-h-screen bg-background">
       <SEO
@@ -88,8 +112,8 @@ const Products = () => {
             "@context": "https://schema.org",
             "@type": "BreadcrumbList",
             itemListElement: [
-              { "@type": "ListItem", position: 1, name: "Home", item: "https://furniture-ecommerce.lovable.app/" },
-              { "@type": "ListItem", position: 2, name: "Products", item: "https://furniture-ecommerce.lovable.app/products" },
+              { "@type": "ListItem", position: 1, name: "Home", item: `${SITE}/` },
+              { "@type": "ListItem", position: 2, name: "Products", item: `${SITE}/products` },
             ],
           },
           {
@@ -97,7 +121,14 @@ const Products = () => {
             "@type": "CollectionPage",
             name: "Furniture Collection",
             description: "Premium sustainable furniture collection — sofas, chairs, beds, cabinets and tables.",
-            url: "https://furniture-ecommerce.lovable.app/products",
+            url: `${SITE}/products`,
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "ItemList",
+            name: "Modulive Furniture Products",
+            numberOfItems: productItems.length,
+            itemListElement: productItems,
           },
         ]}
       />

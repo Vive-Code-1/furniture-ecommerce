@@ -53,12 +53,37 @@ const Contact = () => {
         title="Contact Modulive — Furniture Consultation & Support"
         description="Get in touch for furniture consultations, custom orders, or appointment booking. We reply within 24 hours."
         path="/contact"
-        jsonLd={{
-          "@context": "https://schema.org",
-          "@type": "ContactPage",
-          name: "Contact Modulive",
-          url: "https://furniture-ecommerce.lovable.app/contact",
-        }}
+        jsonLd={[
+          {
+            "@context": "https://schema.org",
+            "@type": "ContactPage",
+            name: "Contact Modulive",
+            url: "https://furniture-ecommerce.lovable.app/contact",
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              { "@type": "ListItem", position: 1, name: "Home", item: "https://furniture-ecommerce.lovable.app/" },
+              { "@type": "ListItem", position: 2, name: "Contact", item: "https://furniture-ecommerce.lovable.app/contact" },
+            ],
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            name: "Modulive",
+            url: "https://furniture-ecommerce.lovable.app",
+            contactPoint: [
+              {
+                "@type": "ContactPoint",
+                contactType: "customer support",
+                email: "support@modulive.com",
+                availableLanguage: ["English"],
+                areaServed: "US",
+              },
+            ],
+          },
+        ]}
       />
       <Navbar />
       <main className="pt-24 pb-12 md:pt-32 md:pb-20">

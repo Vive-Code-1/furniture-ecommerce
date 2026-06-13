@@ -5,6 +5,7 @@ import { useProducts } from "@/hooks/useProducts";
 import type { DbProduct } from "@/hooks/useProducts";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import SEO from "@/components/SEO";
 import QuickViewModal from "@/components/product/QuickViewModal";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -78,6 +79,28 @@ const Products = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Shop Furniture Online — Sofas, Chairs & More | Modulive"
+        description="Browse premium sustainable furniture: sofas, chairs, beds, cabinets and tables. Quality craftsmanship, fair prices, free shipping over $50."
+        path="/products"
+        jsonLd={[
+          {
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              { "@type": "ListItem", position: 1, name: "Home", item: "https://furniture-ecommerce.lovable.app/" },
+              { "@type": "ListItem", position: 2, name: "Products", item: "https://furniture-ecommerce.lovable.app/products" },
+            ],
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "CollectionPage",
+            name: "Furniture Collection",
+            description: "Premium sustainable furniture collection — sofas, chairs, beds, cabinets and tables.",
+            url: "https://furniture-ecommerce.lovable.app/products",
+          },
+        ]}
+      />
       <Navbar />
       <main className="pt-24 pb-12 md:pt-32 md:pb-20">
         <div className="container mx-auto">

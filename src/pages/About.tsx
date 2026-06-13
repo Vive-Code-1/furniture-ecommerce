@@ -2,9 +2,10 @@ import { motion } from "framer-motion";
 import { Award, Leaf, Heart, Users, Pencil, Hammer, Truck, ArrowRight, Calendar } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import SEO from "@/components/SEO";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import workshopImage from "@/assets/quality-banner.jpg";
+import workshopImage from "@/assets/quality-banner.webp";
 import avatar1 from "@/assets/avatars/avatar-1.jpg";
 import avatar2 from "@/assets/avatars/avatar-2.jpg";
 import avatar3 from "@/assets/avatars/avatar-3.jpg";
@@ -54,6 +55,27 @@ const process = [
 const About = () => {
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Our Story — Sustainable Furniture Craftsmanship | Modulive"
+        description="Modulive crafts premium sustainable furniture using ethically sourced materials and timeless design. Meet the team behind 18,000+ happy customers."
+        path="/about"
+        jsonLd={[
+          {
+            "@context": "https://schema.org",
+            "@type": "AboutPage",
+            name: "About Modulive",
+            url: "https://furniture-ecommerce.lovable.app/about",
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              { "@type": "ListItem", position: 1, name: "Home", item: "https://furniture-ecommerce.lovable.app/" },
+              { "@type": "ListItem", position: 2, name: "About", item: "https://furniture-ecommerce.lovable.app/about" },
+            ],
+          },
+        ]}
+      />
       <Navbar />
       <main className="pt-24 pb-12 md:pt-32 md:pb-20">
         <div className="container mx-auto">

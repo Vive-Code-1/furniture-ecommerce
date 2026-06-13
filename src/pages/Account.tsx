@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import SEO from "@/components/SEO";
 import WriteReviewDialog from "@/components/account/WriteReviewDialog";
 
 interface Order {
@@ -130,6 +131,12 @@ const Account = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="My Account — Modulive"
+        description="Manage your Modulive account, view order history, and write reviews."
+        path="/account"
+        noindex
+      />
       <Navbar />
       <main className="pt-24 pb-12 md:pt-32 md:pb-20">
         <div className="container mx-auto max-w-4xl">

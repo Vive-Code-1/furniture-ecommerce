@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import SEO from "@/components/SEO";
 import { z } from "zod";
 
 const loginSchema = z.object({
@@ -80,6 +81,12 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
+      <SEO
+        title="Sign In or Sign Up — Modulive"
+        description="Sign in to your Modulive account or create a new one to track orders and save favorites."
+        path="/auth"
+        noindex
+      />
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import SEO from "@/components/SEO";
 
 const contactInfo = [
   { icon: MapPin, label: "Address", value: "12-B Street Lorem, Ipsum, NY 10001" },
@@ -48,6 +49,17 @@ const Contact = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Contact Modulive — Furniture Consultation & Support"
+        description="Get in touch for furniture consultations, custom orders, or appointment booking. We reply within 24 hours."
+        path="/contact"
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "ContactPage",
+          name: "Contact Modulive",
+          url: "https://furniture-ecommerce.lovable.app/contact",
+        }}
+      />
       <Navbar />
       <main className="pt-24 pb-12 md:pt-32 md:pb-20">
         <div className="container mx-auto">

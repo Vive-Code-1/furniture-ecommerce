@@ -176,7 +176,7 @@ const AdminOrders = () => {
     return matchesSearch && matchesFilter;
   });
 
-  const { selected, setSelected, toggleSelect, toggleAll, clear: clearSelection, allChecked } = useSelection(filtered);
+  const { selected, setSelected, toggleSelect, toggleAll } = useSelection(filtered);
 
   return (
     <div className="p-4 md:p-8 space-y-6">

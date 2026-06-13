@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { isSafeImageUrl } from "@/lib/validators";
 import { format } from "date-fns";
 
 interface Review {
@@ -136,6 +137,10 @@ const AdminReviews = () => {
   const handleSave = async () => {
     if (!editingReview.reviewer_name.trim() || !editingReview.review_text.trim()) {
       toast({ title: "Error", description: "Name and review text are required.", variant: "destructive" });
+      return;
+    }
+    if (!isSafeImageUrl(editingReview.reviewer_avatar)) {
+      toast({ title: "Invalid avatar URL", description: "Use an https:// or http:// URL.", variant: "destructive" });
       return;
     }
 

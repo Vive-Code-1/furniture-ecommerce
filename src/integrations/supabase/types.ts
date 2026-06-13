@@ -184,6 +184,7 @@ export type Database = {
           created_at: string
           customer_email: string | null
           customer_name: string
+          customer_phone: string | null
           discount_amount: number
           id: string
           is_trashed: boolean
@@ -202,6 +203,7 @@ export type Database = {
           created_at?: string
           customer_email?: string | null
           customer_name: string
+          customer_phone?: string | null
           discount_amount?: number
           id?: string
           is_trashed?: boolean
@@ -220,6 +222,7 @@ export type Database = {
           created_at?: string
           customer_email?: string | null
           customer_name?: string
+          customer_phone?: string | null
           discount_amount?: number
           id?: string
           is_trashed?: boolean
@@ -410,6 +413,7 @@ export type Database = {
           p_coupon_code?: string
           p_customer_email: string
           p_customer_name: string
+          p_customer_phone?: string
           p_items?: Json
           p_shipping_address: string
           p_user_id?: string

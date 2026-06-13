@@ -55,7 +55,7 @@ const AdminProducts = () => {
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteIds, setDeleteIds] = useState<string[]>([]);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  
   const [editingProduct, setEditingProduct] = useState<typeof emptyProduct & { id?: string }>(emptyProduct);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -165,25 +165,13 @@ const AdminProducts = () => {
     setDialogOpen(true);
   };
 
-  const toggleSelect = (id: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const toggleAll = () => {
-    if (selected.size === filtered.length) setSelected(new Set());
-    else setSelected(new Set(filtered.map((p) => p.id)));
-  };
-
   const filtered = products.filter(
     (p) =>
       p.name.toLowerCase().includes(search.toLowerCase()) ||
       p.category.toLowerCase().includes(search.toLowerCase())
   );
+
+  const { selected, setSelected, toggleSelect, toggleAll } = useSelection(filtered);
 
   // Extract unique categories from products + defaults for autocomplete
   const DEFAULT_ADMIN_CATEGORIES = ["Chair", "Office Chair", "Cabinet", "Sofa", "Bed", "Bench", "Table"];

@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import bannerImage from "@/assets/quality-banner.jpg";
+import bannerImage from "@/assets/quality-banner.webp";
 
 const QualityBanner = () => {
   return (
@@ -18,6 +18,10 @@ const QualityBanner = () => {
           <img
             src={bannerImage}
             alt="Premium furniture interior"
+            width={1600}
+            height={640}
+            loading="lazy"
+            decoding="async"
             className="w-full h-[320px] md:h-[420px] object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-foreground/70 via-foreground/40 to-transparent" />

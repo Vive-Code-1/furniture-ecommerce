@@ -48,7 +48,7 @@ const AdminOrders = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  
   const [tab, setTab] = useState<"active" | "trash">("active");
   const [bulkStatusValue, setBulkStatusValue] = useState("");
   const [confirmTrash, setConfirmTrash] = useState(false);
@@ -164,15 +164,6 @@ const AdminOrders = () => {
     }
   };
 
-  const toggleSelect = (id: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
   const activeOrders = orders.filter((o) => !o.is_trashed);
   const trashedOrders = orders.filter((o) => o.is_trashed);
   const currentOrders = tab === "active" ? activeOrders : trashedOrders;
@@ -185,10 +176,7 @@ const AdminOrders = () => {
     return matchesSearch && matchesFilter;
   });
 
-  const toggleAll = () => {
-    if (selected.size === filtered.length) setSelected(new Set());
-    else setSelected(new Set(filtered.map((o) => o.id)));
-  };
+  const { selected, setSelected, toggleSelect, toggleAll, clear: clearSelection, allChecked } = useSelection(filtered);
 
   return (
     <div className="p-4 md:p-8 space-y-6">

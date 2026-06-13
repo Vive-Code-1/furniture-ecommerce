@@ -1,4 +1,5 @@
 import { lazy, Suspense } from "react";
+import SEO from "@/components/SEO";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import HeroSection from "@/components/home/HeroSection";
@@ -19,6 +20,22 @@ const SectionPlaceholder = ({ minHeight }: { minHeight: number }) => (
 const Index = () => {
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Modulive — Premium Sustainable Furniture for Modern Homes"
+        description="Shop sustainable sofas, chairs, beds and cabinets handcrafted for modern living. Premium quality, ethically sourced materials, free shipping over $50."
+        path="/"
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "Store",
+          name: "Modulive",
+          url: "https://furniture-ecommerce.lovable.app",
+          image:
+            "https://storage.googleapis.com/gpt-engineer-file-uploads/a7uxPWDUuQTJL38PxBQzg0idiRd2/social-images/social-1770596993181-Furniture_Ecommerce.png",
+          priceRange: "$$",
+          description:
+            "Premium sustainable furniture: sofas, chairs, beds, cabinets and tables for modern homes.",
+        }}
+      />
       <Navbar />
       <main>
         <HeroSection />

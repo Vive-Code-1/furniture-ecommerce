@@ -5,6 +5,7 @@ import { useProducts } from "@/hooks/useProducts";
 import type { DbProduct } from "@/hooks/useProducts";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import SEO from "@/components/SEO";
 import QuickViewModal from "@/components/product/QuickViewModal";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";

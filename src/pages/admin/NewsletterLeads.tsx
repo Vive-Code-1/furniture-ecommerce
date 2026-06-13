@@ -16,6 +16,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { useSelection } from "@/hooks/useSelection";
 
 interface Subscriber {
   id: string;
@@ -27,7 +28,7 @@ const NewsletterLeads = () => {
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  
   const [deleteIds, setDeleteIds] = useState<string[]>([]);
   const { toast } = useToast();
 
@@ -55,23 +56,11 @@ const NewsletterLeads = () => {
     fetchSubscribers();
   };
 
-  const toggleSelect = (id: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
   const filtered = subscribers.filter((s) =>
     s.email.toLowerCase().includes(search.toLowerCase())
   );
 
-  const toggleAll = () => {
-    if (selected.size === filtered.length) setSelected(new Set());
-    else setSelected(new Set(filtered.map((s) => s.id)));
-  };
+  const { selected, setSelected, toggleSelect, toggleAll } = useSelection(filtered);
 
   return (
     <div className="p-4 md:p-8 space-y-6">

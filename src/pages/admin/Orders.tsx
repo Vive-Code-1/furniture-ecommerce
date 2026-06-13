@@ -26,6 +26,8 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { generateInvoiceHTML, openInvoice } from "@/lib/invoice";
+import { useSelection } from "@/hooks/useSelection";
+import AdminStatusBadge from "@/components/admin/AdminStatusBadge";
 
 interface Order {
   id: string;
@@ -40,15 +42,6 @@ interface Order {
 }
 
 const statuses = ["pending", "processing", "shipped", "delivered", "returned", "canceled"];
-
-const statusColors: Record<string, string> = {
-  pending: "bg-amber-100 text-amber-700",
-  processing: "bg-blue-100 text-blue-700",
-  shipped: "bg-violet-100 text-violet-700",
-  delivered: "bg-emerald-100 text-emerald-700",
-  returned: "bg-orange-100 text-orange-700",
-  canceled: "bg-red-100 text-red-700",
-};
 
 const AdminOrders = () => {
   const [orders, setOrders] = useState<Order[]>([]);

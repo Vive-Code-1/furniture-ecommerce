@@ -77,6 +77,8 @@ const HeroSection = () => {
                 alt="Premium sustainable sofa"
                 className="w-full h-full object-cover absolute inset-0"
                 loading="eager"
+                fetchPriority="high"
+                decoding="async"
               />
 
               {/* Check Reviews - corner cutout */}
@@ -129,6 +131,8 @@ const HeroSection = () => {
                         src={product.image}
                         alt={product.name}
                         className="w-full h-full object-contain p-2"
+                        loading="lazy"
+                        decoding="async"
                       />
                     </div>
                     <div className="flex items-center justify-between mt-2">

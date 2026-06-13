@@ -44,50 +44,26 @@ const Checkout = () => {
     try {
       const shippingAddress = `${formData.address}, ${formData.city}, ${formData.zip}, ${formData.country}`;
 
-      // Create the order in the database
-      const { data: orderData, error: orderError } = await supabase
-        .from("orders")
-        .insert({
-          customer_name: formData.name.trim(),
-          customer_email: formData.email.trim(),
-          shipping_address: shippingAddress,
-          total_amount: grandTotal,
-          status: "pending",
-          user_id: user?.id || null,
-        })
-        .select()
-        .single();
+      // Server computes prices, delivery, discount and total from the DB.
+      // Only product_id + quantity are trusted from the client.
+      const { data, error } = await supabase.rpc("create_order", {
+        p_customer_name: formData.name.trim(),
+        p_customer_email: formData.email.trim(),
+        p_shipping_address: shippingAddress,
+        p_user_id: user?.id ?? null,
+        p_items: items.map((item) => ({
+          product_id: item.id,
+          quantity: item.quantity,
+        })),
+        p_coupon_code: null,
+      });
 
-      if (orderError) throw orderError;
-
-      // Look up product IDs by name from the database
-      const productNames = items.map((item) => item.name);
-      const { data: dbProducts } = await supabase
-        .from("products")
-        .select("id, name")
-        .in("name", productNames);
-
-      const nameToId: Record<string, string> = {};
-      dbProducts?.forEach((p) => { nameToId[p.name] = p.id; });
-
-      // Insert order items with matched product_id
-      const orderItems = items.map((item) => ({
-        order_id: orderData.id,
-        product_name: item.name,
-        quantity: item.quantity,
-        unit_price: item.price,
-        product_id: nameToId[item.name] || null,
-      }));
-
-      const { error: itemsError } = await supabase
-        .from("order_items")
-        .insert(orderItems);
-
-      if (itemsError) throw itemsError;
+      if (error) throw error;
+      const result = data as { order_number: string };
 
       toast({
         title: "Order Placed Successfully!",
-        description: `Your order ${orderData.order_number} has been confirmed. ${paymentMethod === "cod" ? "Pay on delivery." : ""}`,
+        description: `Your order ${result.order_number} has been confirmed.${paymentMethod === "cod" ? " Pay on delivery." : ""}`,
       });
       clearCart();
 
@@ -106,6 +82,7 @@ const Checkout = () => {
       setLoading(false);
     }
   };
+
 
   if (items.length === 0) {
     return (

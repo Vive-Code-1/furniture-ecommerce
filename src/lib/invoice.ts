@@ -14,6 +14,17 @@ interface InvoiceItem {
   unit_price: number;
 }
 
+// HTML-escape any user-controlled string before injecting into the invoice template
+const esc = (val: unknown): string => {
+  if (val === null || val === undefined) return "";
+  return String(val)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+};
+
 export const generateInvoiceHTML = (order: InvoiceOrder, items: InvoiceItem[]): string => {
   const date = new Date(order.order_date).toLocaleDateString("en-US", {
     year: "numeric",
@@ -25,8 +36,8 @@ export const generateInvoiceHTML = (order: InvoiceOrder, items: InvoiceItem[]): 
     .map(
       (item) => `
       <tr>
-        <td style="padding: 10px 0; border-bottom: 1px solid #eee;">${item.product_name}</td>
-        <td style="padding: 10px 0; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
+        <td style="padding: 10px 0; border-bottom: 1px solid #eee;">${esc(item.product_name)}</td>
+        <td style="padding: 10px 0; border-bottom: 1px solid #eee; text-align: center;">${esc(item.quantity)}</td>
         <td style="padding: 10px 0; border-bottom: 1px solid #eee; text-align: right;">$${Number(item.unit_price).toFixed(2)}</td>
         <td style="padding: 10px 0; border-bottom: 1px solid #eee; text-align: right;">$${(item.quantity * Number(item.unit_price)).toFixed(2)}</td>
       </tr>
@@ -34,11 +45,14 @@ export const generateInvoiceHTML = (order: InvoiceOrder, items: InvoiceItem[]): 
     )
     .join("");
 
+  const statusLabel = order.status ? order.status.charAt(0).toUpperCase() + order.status.slice(1) : "";
+
   return `
     <!DOCTYPE html>
     <html>
     <head>
-      <title>Invoice - ${order.order_number}</title>
+      <meta charset="utf-8" />
+      <title>Invoice - ${esc(order.order_number)}</title>
       <style>
         body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 40px; color: #333; }
         .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; }
@@ -62,15 +76,15 @@ export const generateInvoiceHTML = (order: InvoiceOrder, items: InvoiceItem[]): 
       <div class="info-grid">
         <div class="info-block">
           <h4>Bill To</h4>
-          <p><strong>${order.customer_name}</strong></p>
-          ${order.customer_email ? `<p>${order.customer_email}</p>` : ""}
-          ${order.shipping_address ? `<p>${order.shipping_address}</p>` : ""}
+          <p><strong>${esc(order.customer_name)}</strong></p>
+          ${order.customer_email ? `<p>${esc(order.customer_email)}</p>` : ""}
+          ${order.shipping_address ? `<p>${esc(order.shipping_address)}</p>` : ""}
         </div>
         <div class="info-block" style="text-align: right;">
           <h4>Invoice Details</h4>
-          <p><strong>Order:</strong> ${order.order_number}</p>
-          <p><strong>Date:</strong> ${date}</p>
-          <p><strong>Status:</strong> ${order.status.charAt(0).toUpperCase() + order.status.slice(1)}</p>
+          <p><strong>Order:</strong> ${esc(order.order_number)}</p>
+          <p><strong>Date:</strong> ${esc(date)}</p>
+          <p><strong>Status:</strong> ${esc(statusLabel)}</p>
         </div>
       </div>
       <table>
@@ -100,10 +114,17 @@ export const generateInvoiceHTML = (order: InvoiceOrder, items: InvoiceItem[]): 
 };
 
 export const openInvoice = (html: string) => {
-  const win = window.open("", "_blank");
+  // Use a Blob URL instead of document.write to avoid XSS-friendly DOM injection
+  const blob = new Blob([html], { type: "text/html" });
+  const url = URL.createObjectURL(blob);
+  const win = window.open(url, "_blank", "noopener,noreferrer");
   if (win) {
-    win.document.write(html);
-    win.document.close();
-    setTimeout(() => win.print(), 500);
+    setTimeout(() => {
+      try { win.print(); } catch { /* user can print manually */ }
+      // Release the object URL once the print dialog has had time to open
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    }, 600);
+  } else {
+    URL.revokeObjectURL(url);
   }
 };

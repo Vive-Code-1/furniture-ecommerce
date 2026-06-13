@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface DbProduct {
@@ -17,48 +18,40 @@ export interface DbProduct {
 
 const DEFAULT_CATEGORIES = ["All", "Chair", "Office Chair", "Cabinet", "Sofa", "Bed", "Bench", "Table"];
 
+async function fetchProducts(): Promise<DbProduct[]> {
+  const { data, error } = await supabase
+    .from("products")
+    .select("id, name, price, category, description, thumbnail_url, stock_quantity, is_active")
+    .eq("is_active", true)
+    .order("created_at", { ascending: false });
+
+  if (error || !data) return [];
+  return data.map((p) => ({
+    id: p.id,
+    name: p.name,
+    price: Number(p.price),
+    image: p.thumbnail_url || "/placeholder.svg",
+    category: p.category,
+    description: p.description,
+    thumbnail_url: p.thumbnail_url,
+    stock_quantity: p.stock_quantity,
+    is_active: p.is_active,
+  }));
+}
+
 export function useProducts() {
-  const [products, setProducts] = useState<DbProduct[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
-  const fetchProducts = async () => {
-    const { data, error } = await supabase
-      .from("products")
-      .select("*")
-      .eq("is_active", true)
-      .order("created_at", { ascending: false });
-
-    if (!error && data) {
-      setProducts(
-        data.map((p) => ({
-          id: p.id,
-          name: p.name,
-          price: Number(p.price),
-          image: p.thumbnail_url || "/placeholder.svg",
-          category: p.category,
-          description: p.description,
-          thumbnail_url: p.thumbnail_url,
-          stock_quantity: p.stock_quantity,
-          is_active: p.is_active,
-        }))
-      );
-    }
-    setLoading(false);
-  };
+  const { data: products = [], isLoading: loading, refetch } = useQuery({
+    queryKey: ["products", "active"],
+    queryFn: fetchProducts,
+    staleTime: 5 * 60_000,
+  });
 
   const categories = useMemo(() => {
     const dbCats = products.map((p) => p.category);
     const allCats = new Set([...DEFAULT_CATEGORIES, ...dbCats]);
-    // Keep "All" first, sort the rest
-    const sorted = Array.from(allCats)
-      .filter((c) => c !== "All")
-      .sort();
+    const sorted = Array.from(allCats).filter((c) => c !== "All").sort();
     return ["All", ...sorted];
   }, [products]);
 
-  return { products, categories, loading, refetch: fetchProducts };
+  return { products, categories, loading, refetch };
 }

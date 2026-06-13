@@ -22,58 +22,29 @@ const SalesOverview = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchCategorySales();
+    (async () => {
+      const { data, error } = await supabase.rpc("get_category_sales");
+      if (error || !data) {
+        setLoading(false);
+        return;
+      }
+      const rows = data as Array<{ category: string; total: number }>;
+      const grandTotal = rows.reduce((s, r) => s + Number(r.total), 0);
+      if (grandTotal === 0) {
+        setCategories([]);
+        setLoading(false);
+        return;
+      }
+      setCategories(
+        rows.slice(0, 7).map((r, i) => ({
+          name: r.category,
+          percentage: parseFloat(((Number(r.total) / grandTotal) * 100).toFixed(1)),
+          color: COLORS[i % COLORS.length],
+        }))
+      );
+      setLoading(false);
+    })();
   }, []);
-
-  const fetchCategorySales = async () => {
-    const { data: items, error } = await supabase
-      .from("order_items")
-      .select("unit_price, quantity, product_id");
-
-    if (error || !items) {
-      setLoading(false);
-      return;
-    }
-
-    // Get products to map categories
-    const { data: products } = await supabase
-      .from("products")
-      .select("id, category");
-
-    const productCategoryMap: Record<string, string> = {};
-    (products || []).forEach((p) => {
-      productCategoryMap[p.id] = p.category;
-    });
-
-    // Aggregate sales by category
-    const categoryTotals: Record<string, number> = {};
-    let grandTotal = 0;
-
-    items.forEach((item) => {
-      const cat = item.product_id ? (productCategoryMap[item.product_id] || "Uncategorized") : "Uncategorized";
-      const amount = Number(item.unit_price) * item.quantity;
-      categoryTotals[cat] = (categoryTotals[cat] || 0) + amount;
-      grandTotal += amount;
-    });
-
-    if (grandTotal === 0) {
-      setCategories([]);
-      setLoading(false);
-      return;
-    }
-
-    const sorted = Object.entries(categoryTotals)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 7)
-      .map(([name, total], i) => ({
-        name,
-        percentage: parseFloat(((total / grandTotal) * 100).toFixed(1)),
-        color: COLORS[i % COLORS.length],
-      }));
-
-    setCategories(sorted);
-    setLoading(false);
-  };
 
   return (
     <div className="bg-card rounded-2xl border border-border p-6">

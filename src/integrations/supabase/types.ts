@@ -420,6 +420,14 @@ export type Database = {
         }
         Returns: Json
       }
+      get_admin_notification_counts: { Args: never; Returns: Json }
+      get_category_sales: {
+        Args: never
+        Returns: {
+          category: string
+          total: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

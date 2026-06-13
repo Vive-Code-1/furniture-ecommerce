@@ -153,8 +153,21 @@ const AdminOrders = () => {
 
   const bulkGenerateInvoices = async () => {
     const selectedOrders = orders.filter((o) => selected.has(o.id));
+    if (selectedOrders.length === 0) return;
+    const ids = selectedOrders.map((o) => o.id);
+    const { data: allItems } = await supabase
+      .from("order_items")
+      .select("order_id, product_name, quantity, unit_price")
+      .in("order_id", ids);
+    const byOrder = new Map<string, Array<{ product_name: string; quantity: number; unit_price: number }>>();
+    (allItems || []).forEach((it) => {
+      const arr = byOrder.get(it.order_id) || [];
+      arr.push({ product_name: it.product_name, quantity: it.quantity, unit_price: Number(it.unit_price) });
+      byOrder.set(it.order_id, arr);
+    });
     for (const order of selectedOrders) {
-      await generateInvoice(order);
+      const html = generateInvoiceHTML(order, byOrder.get(order.id) || []);
+      openInvoice(html);
     }
   };
 

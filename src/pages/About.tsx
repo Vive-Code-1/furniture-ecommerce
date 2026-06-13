@@ -102,7 +102,7 @@ const About = () => {
             <div className="rounded-2xl overflow-hidden">
               <img
                 src={workshopImage}
-                alt="Our furniture workshop interior"
+                alt="Modulive sustainable furniture workshop with artisans at work"
                 className="w-full h-[300px] md:h-[400px] object-cover"
               />
             </div>
@@ -252,7 +252,7 @@ const About = () => {
           >
             <img
               src={workshopImage}
-              alt="Premium furniture showcase"
+              alt="Modulive premium furniture collection showcase"
               className="w-full h-[260px] md:h-[340px] object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-r from-foreground/75 via-foreground/50 to-transparent" />

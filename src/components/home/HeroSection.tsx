@@ -74,7 +74,7 @@ const HeroSection = () => {
             <div className="relative w-full md:w-2/3 rounded-2xl overflow-hidden bg-secondary min-h-[280px] md:min-h-[420px]">
               <img
                 src={heroSofa}
-                alt="Premium sustainable sofa"
+                alt="Premium sustainable Modulive sofa in a modern living room"
                 className="w-full h-full object-cover absolute inset-0"
                 loading="eager"
                 fetchPriority="high"
@@ -91,9 +91,9 @@ const HeroSection = () => {
                 <div className="bg-background rounded-br-2xl pr-3 pb-3">
                   <div className="flex items-center gap-2 bg-card/90 backdrop-blur-sm rounded-full px-3 py-1.5">
                     <div className="flex -space-x-2">
-                      <img src={avatar1} alt="Customer" className="w-7 h-7 rounded-full border-2 border-card object-cover" />
-                      <img src={avatar2} alt="Customer" className="w-7 h-7 rounded-full border-2 border-card object-cover" />
-                      <img src={avatar3} alt="Customer" className="w-7 h-7 rounded-full border-2 border-card object-cover" />
+                      <img src={avatar1} alt="" aria-hidden="true" className="w-7 h-7 rounded-full border-2 border-card object-cover" />
+                      <img src={avatar2} alt="" aria-hidden="true" className="w-7 h-7 rounded-full border-2 border-card object-cover" />
+                      <img src={avatar3} alt="" aria-hidden="true" className="w-7 h-7 rounded-full border-2 border-card object-cover" />
                     </div>
                     <span className="text-xs font-medium">Check reviews</span>
                   </div>

@@ -318,9 +318,7 @@ const AdminOrders = () => {
                     </td>
                     <td className="px-4 py-4 font-semibold">${Number(order.total_amount).toFixed(2)}</td>
                     <td className="px-4 py-4">
-                      <Badge variant="secondary" className={`text-xs capitalize rounded-full px-2.5 ${statusColors[order.status] || ""}`}>
-                        {order.status}
-                      </Badge>
+                      <AdminStatusBadge status={order.status} className="text-xs capitalize px-2.5" />
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-1">

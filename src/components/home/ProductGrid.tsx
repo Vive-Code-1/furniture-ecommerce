@@ -66,6 +66,7 @@ const ProductGrid = () => {
                       alt={product.name}
                       className="w-full h-52 md:h-72 object-cover rounded-xl p-1 group-hover:scale-105 transition-transform duration-500"
                       loading="lazy"
+                      decoding="async"
                     />
                   </div>
                   <div className="p-3 md:p-4 flex items-center justify-between">

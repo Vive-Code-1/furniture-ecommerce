@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowUpRight, SlidersHorizontal, X } from "lucide-react";
 import { useProducts } from "@/hooks/useProducts";
@@ -19,7 +19,7 @@ const Products = () => {
   const [showMobileFilter, setShowMobileFilter] = useState(false);
   const { products, categories, loading } = useProducts();
 
-  const filteredProducts = (() => {
+  const filteredProducts = useMemo(() => {
     let result =
       activeCategory === "All"
         ? [...products]
@@ -36,9 +36,8 @@ const Products = () => {
         result.sort((a, b) => a.name.localeCompare(b.name));
         break;
     }
-
     return result;
-  })();
+  }, [products, activeCategory, sortBy]);
 
   const CategorySidebar = () => (
     <div className="space-y-2">

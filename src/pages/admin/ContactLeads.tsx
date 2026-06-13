@@ -23,6 +23,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { useSelection } from "@/hooks/useSelection";
 
 interface ContactLead {
   id: string;
@@ -39,7 +40,7 @@ const ContactLeads = () => {
   const [leads, setLeads] = useState<ContactLead[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  
   const [deleteIds, setDeleteIds] = useState<string[]>([]);
   const [viewLead, setViewLead] = useState<ContactLead | null>(null);
   const { toast } = useToast();
@@ -85,15 +86,6 @@ const ContactLeads = () => {
     }
   };
 
-  const toggleSelect = (id: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
   const filtered = leads.filter(
     (l) =>
       l.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -101,10 +93,7 @@ const ContactLeads = () => {
       l.subject.toLowerCase().includes(search.toLowerCase())
   );
 
-  const toggleAll = () => {
-    if (selected.size === filtered.length) setSelected(new Set());
-    else setSelected(new Set(filtered.map((l) => l.id)));
-  };
+  const { selected, setSelected, toggleSelect, toggleAll } = useSelection(filtered);
 
   const unreadCount = leads.filter((l) => !l.is_read).length;
 

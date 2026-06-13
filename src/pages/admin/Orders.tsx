@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Search, ShoppingCart, Trash2, FileText, RotateCcw, Archive } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -26,6 +26,8 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { generateInvoiceHTML, openInvoice } from "@/lib/invoice";
+import { useSelection } from "@/hooks/useSelection";
+import AdminStatusBadge from "@/components/admin/AdminStatusBadge";
 
 interface Order {
   id: string;
@@ -41,21 +43,12 @@ interface Order {
 
 const statuses = ["pending", "processing", "shipped", "delivered", "returned", "canceled"];
 
-const statusColors: Record<string, string> = {
-  pending: "bg-amber-100 text-amber-700",
-  processing: "bg-blue-100 text-blue-700",
-  shipped: "bg-violet-100 text-violet-700",
-  delivered: "bg-emerald-100 text-emerald-700",
-  returned: "bg-orange-100 text-orange-700",
-  canceled: "bg-red-100 text-red-700",
-};
-
 const AdminOrders = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  
   const [tab, setTab] = useState<"active" | "trash">("active");
   const [bulkStatusValue, setBulkStatusValue] = useState("");
   const [confirmTrash, setConfirmTrash] = useState(false);
@@ -171,15 +164,6 @@ const AdminOrders = () => {
     }
   };
 
-  const toggleSelect = (id: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
   const activeOrders = orders.filter((o) => !o.is_trashed);
   const trashedOrders = orders.filter((o) => o.is_trashed);
   const currentOrders = tab === "active" ? activeOrders : trashedOrders;
@@ -192,10 +176,7 @@ const AdminOrders = () => {
     return matchesSearch && matchesFilter;
   });
 
-  const toggleAll = () => {
-    if (selected.size === filtered.length) setSelected(new Set());
-    else setSelected(new Set(filtered.map((o) => o.id)));
-  };
+  const { selected, setSelected, toggleSelect, toggleAll } = useSelection(filtered);
 
   return (
     <div className="p-4 md:p-8 space-y-6">
@@ -337,9 +318,7 @@ const AdminOrders = () => {
                     </td>
                     <td className="px-4 py-4 font-semibold">${Number(order.total_amount).toFixed(2)}</td>
                     <td className="px-4 py-4">
-                      <Badge variant="secondary" className={`text-xs capitalize rounded-full px-2.5 ${statusColors[order.status] || ""}`}>
-                        {order.status}
-                      </Badge>
+                      <AdminStatusBadge status={order.status} className="text-xs capitalize px-2.5" />
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-1">

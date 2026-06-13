@@ -35,6 +35,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { isSafeImageUrl } from "@/lib/validators";
 import { format } from "date-fns";
+import { useSelection } from "@/hooks/useSelection";
 
 interface Review {
   id: string;
@@ -74,7 +75,7 @@ const AdminReviews = () => {
   const [filterTab, setFilterTab] = useState<FilterTab>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteIds, setDeleteIds] = useState<string[]>([]);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  
   const [editingReview, setEditingReview] = useState<typeof emptyReview & { id?: string }>(emptyReview);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -197,19 +198,6 @@ const AdminReviews = () => {
     }
   };
 
-  const toggleSelect = (id: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const toggleAll = () => {
-    if (selected.size === filtered.length) setSelected(new Set());
-    else setSelected(new Set(filtered.map((r) => r.id)));
-  };
 
   const openEdit = (review: Review) => {
     setEditingReview({
@@ -237,6 +225,8 @@ const AdminReviews = () => {
     if (filterTab === "featured") return r.is_featured;
     return true;
   });
+
+  const { selected, setSelected, toggleSelect, toggleAll } = useSelection(filtered);
 
   const pendingCount = reviews.filter((r) => !r.is_approved).length;
 

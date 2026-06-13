@@ -226,6 +226,8 @@ const AdminReviews = () => {
     return true;
   });
 
+  const { selected, setSelected, toggleSelect, toggleAll } = useSelection(filtered);
+
   const pendingCount = reviews.filter((r) => !r.is_approved).length;
 
   return (

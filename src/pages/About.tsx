@@ -55,6 +55,27 @@ const process = [
 const About = () => {
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Our Story — Sustainable Furniture Craftsmanship | Modulive"
+        description="Modulive crafts premium sustainable furniture using ethically sourced materials and timeless design. Meet the team behind 18,000+ happy customers."
+        path="/about"
+        jsonLd={[
+          {
+            "@context": "https://schema.org",
+            "@type": "AboutPage",
+            name: "About Modulive",
+            url: "https://furniture-ecommerce.lovable.app/about",
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              { "@type": "ListItem", position: 1, name: "Home", item: "https://furniture-ecommerce.lovable.app/" },
+              { "@type": "ListItem", position: 2, name: "About", item: "https://furniture-ecommerce.lovable.app/about" },
+            ],
+          },
+        ]}
+      />
       <Navbar />
       <main className="pt-24 pb-12 md:pt-32 md:pb-20">
         <div className="container mx-auto">

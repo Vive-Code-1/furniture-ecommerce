@@ -26,6 +26,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { isSafeImageUrl } from "@/lib/validators";
+import { useSelection } from "@/hooks/useSelection";
 
 interface Product {
   id: string;

@@ -68,19 +68,11 @@ const NotificationPanel = () => {
     setUnreadContacts(contactsRes.data || []);
   }, []);
 
-  // Initial counts + realtime subscriptions (no more 30s polling)
+  // Initial counts + 30s polling (sensitive tables removed from realtime for PII protection)
   useEffect(() => {
     fetchCounts();
-    const channel = supabase
-      .channel("admin-notifications")
-      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => fetchCounts())
-      .on("postgres_changes", { event: "*", schema: "public", table: "reviews" }, () => fetchCounts())
-      .on("postgres_changes", { event: "*", schema: "public", table: "newsletter_subscribers" }, () => fetchCounts())
-      .on("postgres_changes", { event: "*", schema: "public", table: "contact_leads" }, () => fetchCounts())
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    const interval = setInterval(fetchCounts, 30000);
+    return () => clearInterval(interval);
   }, [fetchCounts]);
 
   useEffect(() => {

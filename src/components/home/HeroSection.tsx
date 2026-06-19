@@ -72,13 +72,16 @@ const HeroSection = () => {
           >
             {/* Main Sofa Image */}
             <div className="relative w-full md:w-2/3 rounded-2xl overflow-hidden bg-secondary min-h-[280px] md:min-h-[420px]">
-              <img
+              <motion.img
                 src={heroSofa}
                 alt="Premium sustainable Modulive sofa in a modern living room"
                 className="w-full h-full object-cover absolute inset-0"
                 loading="eager"
                 fetchPriority="high"
                 decoding="async"
+                initial={{ opacity: 0, scale: 1.15 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
               />
 
               {/* Check Reviews - corner cutout */}

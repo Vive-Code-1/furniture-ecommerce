@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { CartProvider } from "@/contexts/CartContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ScrollToTop from "@/components/ScrollToTop";
+import RouteFallback from "@/components/RouteFallback";
 import Index from "./pages/Index";
 
 // Lazy-load non-critical routes so the homepage bundle stays small

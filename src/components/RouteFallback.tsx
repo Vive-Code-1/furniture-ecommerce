@@ -1,10 +1,22 @@
+import { useEffect, useState } from "react";
+
 /**
  * Branded route-transition preloader.
- * Replaces the default spinner with an animated Modulive mark + shimmer bar.
+ * Only renders if loading takes longer than `delay` ms — avoids flashing
+ * on fast loads / hard refresh when the route chunk is already cached.
  */
-const RouteFallback = () => {
+const RouteFallback = ({ delay = 300 }: { delay?: number }) => {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setVisible(true), delay);
+    return () => clearTimeout(t);
+  }, [delay]);
+
+  if (!visible) return null;
+
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background animate-in fade-in duration-200">
       <div className="flex flex-col items-center gap-6">
         {/* Animated logo mark */}
         <div className="relative">

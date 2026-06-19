@@ -1,21 +1,48 @@
-import { motion } from "framer-motion";
-import type { ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 interface ScrollRevealProps {
   children: ReactNode;
   delay?: number;
-  y?: number;
+  className?: string;
 }
 
-const ScrollReveal = ({ children, delay = 0, y = 40 }: ScrollRevealProps) => (
-  <motion.div
-    initial={{ opacity: 0, y }}
-    whileInView={{ opacity: 1, y: 0 }}
-    viewport={{ once: true, amount: 0.15 }}
-    transition={{ duration: 0.7, delay, ease: [0.22, 1, 0.36, 1] }}
-  >
-    {children}
-  </motion.div>
-);
+/**
+ * CSS + IntersectionObserver entrance reveal.
+ * Replaces framer-motion to keep the homepage initial JS small.
+ */
+const ScrollReveal = ({ children, delay = 0, className = "" }: ScrollRevealProps) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (typeof IntersectionObserver === "undefined") {
+      setVisible(true);
+      return;
+    }
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          io.disconnect();
+        }
+      },
+      { threshold: 0.15, rootMargin: "0px 0px -10% 0px" }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  return (
+    <div
+      ref={ref}
+      className={`lv-reveal ${visible ? "is-visible" : ""} ${className}`}
+      style={delay ? { transitionDelay: `${delay}s` } : undefined}
+    >
+      {children}
+    </div>
+  );
+};
 
 export default ScrollReveal;

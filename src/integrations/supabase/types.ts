@@ -435,6 +435,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      track_order: { Args: { p_order_number: string }; Returns: Json }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"

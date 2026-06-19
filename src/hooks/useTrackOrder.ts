@@ -8,6 +8,13 @@ interface State {
   result: OrderResult | null;
 }
 
+interface TrackOrderRpcResult {
+  order_number: string;
+  status: string;
+  created_at: string | null;
+  history: { status: string; changed_at: string }[];
+}
+
 export const useTrackOrder = () => {
   const [state, setState] = useState<State>({
     loading: false,
@@ -22,13 +29,14 @@ export const useTrackOrder = () => {
     setState({ loading: true, error: null, result: null });
 
     try {
-      const { data: order, error: orderErr } = await supabase
-        .from("orders")
-        .select("id, order_number, status, created_at")
-        .eq("order_number", trimmed)
-        .maybeSingle();
+      const { data, error } = await supabase.rpc("track_order", {
+        p_order_number: trimmed,
+      });
 
-      if (orderErr) throw orderErr;
+      if (error) throw error;
+
+      const order = data as unknown as TrackOrderRpcResult | null;
+
       if (!order) {
         setState({
           loading: false,
@@ -38,21 +46,13 @@ export const useTrackOrder = () => {
         return;
       }
 
-      const { data: history, error: histErr } = await supabase
-        .from("order_status_history")
-        .select("status, changed_at")
-        .eq("order_id", order.id)
-        .order("changed_at", { ascending: true });
-
-      if (histErr) throw histErr;
-
       setState({
         loading: false,
         error: null,
         result: {
           orderNumber: order.order_number,
           status: order.status,
-          steps: buildTimeline(history ?? [], order.created_at),
+          steps: buildTimeline(order.history ?? [], order.created_at),
         },
       });
     } catch (err) {

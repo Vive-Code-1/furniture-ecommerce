@@ -35,7 +35,7 @@ export const useTrackOrder = () => {
 
       if (error) throw error;
 
-      const order = data as TrackOrderRpcResult | null;
+      const order = data as unknown as TrackOrderRpcResult | null;
 
       if (!order) {
         setState({

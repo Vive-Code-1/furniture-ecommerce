@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import { Search, ShoppingBag, User, Menu, X } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
+import { Search, ShoppingBag, User, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { useCart } from "@/contexts/CartContext";
@@ -19,6 +19,7 @@ const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const { totalItems, isCartOpen, setIsCartOpen } = useCart();
+  const { pathname } = useLocation();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -26,78 +27,134 @@ const Navbar = () => {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  const isActive = (href: string) =>
+    href === "/" ? pathname === "/" : pathname.startsWith(href);
+
   return (
     <>
       <header
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          scrolled ? "bg-card/95 backdrop-blur-md shadow-sm" : "bg-transparent"
+          scrolled ? "py-2" : "py-4"
         }`}
       >
-        <div className="container mx-auto flex items-center justify-between py-4">
+        <div className="container mx-auto flex items-center justify-between gap-4">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2">
+          <Link to="/" className="flex items-center gap-2 shrink-0">
             <div className="w-7 h-7 bg-foreground rounded-full flex items-center justify-center">
               <div className="w-3 h-3 border-2 border-primary-foreground rounded-full" />
             </div>
             <span className="font-heading text-lg font-bold tracking-tight">Modulive</span>
           </Link>
 
-          {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-8">
-            {navLinks.map((link) => (
-              <Link
-                key={link.label}
-                to={link.href}
-                className="text-sm font-body text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {link.label}
-              </Link>
-            ))}
+          {/* Desktop Nav — glassmorphism rounded pill */}
+          <nav
+            aria-label="Main"
+            className="hidden md:flex items-center gap-1 px-2 py-1.5 rounded-full bg-foreground/10 dark:bg-foreground/20 backdrop-blur-xl border border-foreground/10 dark:border-foreground/15 shadow-[0_8px_32px_rgba(0,0,0,0.08)]"
+          >
+            {navLinks.map((link) => {
+              const active = isActive(link.href);
+              return (
+                <Link
+                  key={link.label}
+                  to={link.href}
+                  className={`relative px-4 lg:px-5 py-2 rounded-full text-sm font-body transition-all duration-300 ${
+                    active
+                      ? "bg-background text-foreground shadow-[0_4px_14px_rgba(0,0,0,0.12)] font-semibold"
+                      : "text-foreground/70 hover:text-foreground hover:bg-foreground/5"
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
           </nav>
 
-          {/* Actions */}
+          {/* Actions — grouped in a glass pill on desktop */}
           <div className="flex items-center gap-2">
-            <ThemeToggle className="hidden md:flex" />
-            <Button variant="ghost" size="icon" className="hidden md:flex">
-              <Search className="w-5 h-5" />
-            </Button>
-            <Button variant="ghost" size="icon" className="relative" onClick={() => setIsCartOpen(true)}>
+            <div className="hidden md:flex items-center gap-1 px-1.5 py-1 rounded-full bg-foreground/10 dark:bg-foreground/20 backdrop-blur-xl border border-foreground/10 dark:border-foreground/15 shadow-[0_8px_32px_rgba(0,0,0,0.08)]">
+              <ThemeToggle />
+              <Button variant="ghost" size="icon" className="rounded-full hover:bg-foreground/10">
+                <Search className="w-5 h-5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative rounded-full hover:bg-foreground/10"
+                onClick={() => setIsCartOpen(true)}
+                aria-label="Open cart"
+              >
+                <ShoppingBag className="w-5 h-5" />
+                {totalItems > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-foreground text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center">
+                    {totalItems}
+                  </span>
+                )}
+              </Button>
+              <Link to="/account" aria-label="Account">
+                <Button variant="ghost" size="icon" className="rounded-full hover:bg-foreground/10">
+                  <User className="w-5 h-5" />
+                </Button>
+              </Link>
+            </div>
+
+            {/* Mobile actions (cart + menu only, stays handy) */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden relative rounded-full bg-foreground/10 backdrop-blur-xl"
+              onClick={() => setIsCartOpen(true)}
+              aria-label="Open cart"
+            >
               <ShoppingBag className="w-5 h-5" />
               {totalItems > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-foreground text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center">
+                <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-foreground text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center">
                   {totalItems}
                 </span>
               )}
             </Button>
-            <Link to="/account">
-              <Button variant="ghost" size="icon">
-                <User className="w-5 h-5" />
-              </Button>
-            </Link>
 
-            {/* Mobile Menu */}
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="md:hidden">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="md:hidden rounded-full bg-foreground/10 backdrop-blur-xl"
+                  aria-label="Open menu"
+                >
                   <Menu className="w-5 h-5" />
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="w-[280px] bg-card">
                 <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
-                <div className="flex flex-col gap-6 mt-8">
-                  {navLinks.map((link) => (
-                    <Link
-                      key={link.label}
-                      to={link.href}
-                      onClick={() => setMobileOpen(false)}
-                      className="font-heading text-lg font-semibold hover:text-muted-foreground transition-colors"
-                    >
-                      {link.label}
-                    </Link>
-                  ))}
-                  <div className="pt-4 border-t border-border">
+                <div className="flex flex-col gap-2 mt-8">
+                  {navLinks.map((link) => {
+                    const active = isActive(link.href);
+                    return (
+                      <Link
+                        key={link.label}
+                        to={link.href}
+                        onClick={() => setMobileOpen(false)}
+                        className={`px-4 py-3 rounded-full font-heading text-base transition-colors ${
+                          active
+                            ? "bg-foreground text-background font-semibold"
+                            : "hover:bg-muted"
+                        }`}
+                      >
+                        {link.label}
+                      </Link>
+                    );
+                  })}
+                  <div className="pt-4 mt-2 border-t border-border flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Theme</span>
                     <ThemeToggle />
                   </div>
+                  <Link
+                    to="/account"
+                    onClick={() => setMobileOpen(false)}
+                    className="px-4 py-3 rounded-full font-heading text-base hover:bg-muted"
+                  >
+                    Account
+                  </Link>
                 </div>
               </SheetContent>
             </Sheet>

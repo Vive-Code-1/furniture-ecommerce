@@ -59,8 +59,8 @@ const Footer = () => {
         <div className="mt-12 pt-6 border-t border-primary-foreground/10 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-xs opacity-40">Created in 2025. Modulive All Rights Reserved</p>
           <div className="flex gap-6">
-            <Link to="/terms" className="text-xs opacity-40 hover:opacity-80 transition-opacity">Terms of Service</Link>
-            <Link to="/privacy" className="text-xs opacity-40 hover:opacity-80 transition-opacity">Privacy Policy</Link>
+            <Link to="/about" className="text-xs opacity-40 hover:opacity-80 transition-opacity">About</Link>
+            <Link to="/contact" className="text-xs opacity-40 hover:opacity-80 transition-opacity">Support</Link>
           </div>
         </div>
       </div>

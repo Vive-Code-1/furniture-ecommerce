@@ -1,9 +1,7 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { useCart } from "@/contexts/CartContext";
 import QuickViewModal from "@/components/product/QuickViewModal";
 import type { DbProduct } from "@/hooks/useProducts";
 import heroSofa from "@/assets/hero-sofa.png";
@@ -49,48 +47,33 @@ const HeroSection = () => {
     <section className="relative pt-24 pb-8 md:pt-32 md:pb-16 overflow-hidden">
       <div className="container mx-auto">
         {/* Headline */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7 }}
-          className="text-center mb-8 md:mb-12"
-        >
+        <div className="text-center mb-8 md:mb-12 lv-anim-fade-up">
           <h1 className="font-heading text-3xl md:text-5xl lg:text-6xl font-bold leading-tight tracking-tight">
             Transform Your Space with
             <br />
             Sustainable Furniture
           </h1>
-        </motion.div>
+        </div>
 
         {/* Hero Image + Floating Cards */}
         <div className="relative">
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="flex flex-col md:flex-row gap-4 items-stretch"
+          <div
+            className="flex flex-col md:flex-row gap-4 items-stretch lv-anim-fade-up"
+            style={{ animationDelay: "0.15s" }}
           >
             {/* Main Sofa Image */}
             <div className="relative w-full md:w-2/3 rounded-2xl overflow-hidden bg-secondary min-h-[280px] md:min-h-[420px]">
-              <motion.img
+              <img
                 src={heroSofa}
                 alt="Premium sustainable Modulive sofa in a modern living room"
-                className="w-full h-full object-cover absolute inset-0"
+                className="w-full h-full object-cover absolute inset-0 lv-anim-hero-zoom"
                 loading="eager"
                 fetchPriority="high"
                 decoding="async"
-                initial={{ opacity: 0, scale: 1.15 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
               />
 
               {/* Check Reviews - corner cutout */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5, delay: 0.6 }}
-                className="absolute top-0 left-0"
-              >
+              <div className="absolute top-0 left-0 lv-anim-fade-in" style={{ animationDelay: "0.6s" }}>
                 <div className="bg-background rounded-br-2xl pr-3 pb-3">
                   <div className="flex items-center gap-2 bg-card/90 backdrop-blur-sm rounded-full px-3 py-1.5">
                     <div className="flex -space-x-2">
@@ -101,7 +84,7 @@ const HeroSection = () => {
                     <span className="text-xs font-medium">Check reviews</span>
                   </div>
                 </div>
-              </motion.div>
+              </div>
 
               {/* Shop Now CTA - corner cutout */}
               <div className="absolute bottom-0 right-0">
@@ -119,13 +102,10 @@ const HeroSection = () => {
             {/* Floating Product Cards */}
             <div className="w-full md:w-1/3 flex flex-row md:flex-col gap-3">
               {heroProductDetails.map((product, index) => (
-                <motion.div
+                <div
                   key={product.id}
-                  initial={{ opacity: 0, x: 30 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.6, delay: 0.5 + index * 0.2 }}
-                  whileHover={{ y: -4 }}
-                  className="flex-1 cursor-pointer"
+                  className="flex-1 cursor-pointer lv-anim-slide-right transition-transform duration-300 hover:-translate-y-1"
+                  style={{ animationDelay: `${0.5 + index * 0.15}s` }}
                   onClick={() => setQuickViewProduct(product)}
                 >
                   <div className="bg-card rounded-xl p-3 shadow-sm border border-border h-full hover:shadow-md transition-shadow flex flex-col">
@@ -143,10 +123,10 @@ const HeroSection = () => {
                       <span className="text-sm font-bold">${product.price.toFixed(2)}</span>
                     </div>
                   </div>
-                </motion.div>
+                </div>
               ))}
             </div>
-          </motion.div>
+          </div>
         </div>
       </div>
 

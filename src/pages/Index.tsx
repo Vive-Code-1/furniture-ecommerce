@@ -5,6 +5,7 @@ import Footer from "@/components/layout/Footer";
 import HeroSection from "@/components/home/HeroSection";
 import StatsBar from "@/components/home/StatsBar";
 import ProductGrid from "@/components/home/ProductGrid";
+import ScrollReveal from "@/components/ScrollReveal";
 
 // Below-the-fold sections — defer to keep initial JS small and FCP fast.
 const WhyChooseUs = lazy(() => import("@/components/home/WhyChooseUs"));

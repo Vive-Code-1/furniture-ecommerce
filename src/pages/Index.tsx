@@ -39,19 +39,19 @@ const Index = () => {
       <Navbar />
       <main>
         <HeroSection />
-        <StatsBar />
-        <ProductGrid />
+        <ScrollReveal><StatsBar /></ScrollReveal>
+        <ScrollReveal><ProductGrid /></ScrollReveal>
         <Suspense fallback={<SectionPlaceholder minHeight={420} />}>
-          <WhyChooseUs />
+          <ScrollReveal><WhyChooseUs /></ScrollReveal>
         </Suspense>
         <Suspense fallback={<SectionPlaceholder minHeight={420} />}>
-          <ReviewsSection />
+          <ScrollReveal><ReviewsSection /></ScrollReveal>
         </Suspense>
         <Suspense fallback={<SectionPlaceholder minHeight={480} />}>
-          <QualityBanner />
+          <ScrollReveal><QualityBanner /></ScrollReveal>
         </Suspense>
         <Suspense fallback={<SectionPlaceholder minHeight={320} />}>
-          <Newsletter />
+          <ScrollReveal><Newsletter /></ScrollReveal>
         </Suspense>
       </main>
       <Footer />

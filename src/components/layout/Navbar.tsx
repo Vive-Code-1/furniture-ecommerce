@@ -38,8 +38,11 @@ const Navbar = () => {
         }`}
       >
         <div className="container mx-auto flex items-center justify-between gap-4">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 shrink-0">
+          {/* Logo — glassmorphism pill to match nav */}
+          <Link
+            to="/"
+            className="flex items-center gap-2 shrink-0 pl-1.5 pr-4 py-1 rounded-full bg-foreground/10 dark:bg-foreground/20 backdrop-blur-xl border border-foreground/10 dark:border-foreground/15 shadow-[0_8px_32px_rgba(0,0,0,0.08)] hover:bg-foreground/15 transition-colors"
+          >
             <div className="w-7 h-7 bg-foreground rounded-full flex items-center justify-center">
               <div className="w-3 h-3 border-2 border-primary-foreground rounded-full" />
             </div>

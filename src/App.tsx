@@ -38,11 +38,6 @@ const queryClient = new QueryClient({
   },
 });
 
-const RouteFallback = () => (
-  <div className="min-h-screen bg-background flex items-center justify-center">
-    <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
-  </div>
-);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>

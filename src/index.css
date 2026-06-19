@@ -99,3 +99,38 @@
     @apply font-heading;
   }
 }
+
+/* ============================================================
+   Lightweight CSS-only entrance animations (replaces framer-motion
+   on critical above-the-fold sections for faster TBT/INP).
+   ============================================================ */
+@layer utilities {
+  @keyframes lv-fade-up {
+    from { opacity: 0; transform: translate3d(0, 24px, 0); }
+    to   { opacity: 1; transform: translate3d(0, 0, 0); }
+  }
+  @keyframes lv-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  @keyframes lv-hero-zoom {
+    from { opacity: 0; transform: scale(1.12); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+  @keyframes lv-slide-right {
+    from { opacity: 0; transform: translate3d(24px, 0, 0); }
+    to   { opacity: 1; transform: translate3d(0, 0, 0); }
+  }
+  .lv-anim-fade-up    { animation: lv-fade-up .7s cubic-bezier(.22,1,.36,1) both; }
+  .lv-anim-fade-in    { animation: lv-fade-in .5s ease-out both; }
+  .lv-anim-hero-zoom  { animation: lv-hero-zoom 1.1s cubic-bezier(.22,1,.36,1) both; }
+  .lv-anim-slide-right{ animation: lv-slide-right .6s cubic-bezier(.22,1,.36,1) both; }
+
+  .lv-reveal { opacity: 0; transform: translate3d(0, 32px, 0); transition: opacity .7s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1); will-change: opacity, transform; }
+  .lv-reveal.is-visible { opacity: 1; transform: translate3d(0, 0, 0); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .lv-anim-fade-up, .lv-anim-fade-in, .lv-anim-hero-zoom, .lv-anim-slide-right { animation: none; }
+    .lv-reveal { opacity: 1; transform: none; transition: none; }
+  }
+}

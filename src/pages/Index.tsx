@@ -5,6 +5,7 @@ import Footer from "@/components/layout/Footer";
 import HeroSection from "@/components/home/HeroSection";
 import StatsBar from "@/components/home/StatsBar";
 import ProductGrid from "@/components/home/ProductGrid";
+import ScrollReveal from "@/components/ScrollReveal";
 
 // Below-the-fold sections — defer to keep initial JS small and FCP fast.
 const WhyChooseUs = lazy(() => import("@/components/home/WhyChooseUs"));
@@ -39,19 +40,19 @@ const Index = () => {
       <Navbar />
       <main>
         <HeroSection />
-        <StatsBar />
-        <ProductGrid />
+        <ScrollReveal><StatsBar /></ScrollReveal>
+        <ScrollReveal><ProductGrid /></ScrollReveal>
         <Suspense fallback={<SectionPlaceholder minHeight={420} />}>
-          <WhyChooseUs />
+          <ScrollReveal><WhyChooseUs /></ScrollReveal>
         </Suspense>
         <Suspense fallback={<SectionPlaceholder minHeight={420} />}>
-          <ReviewsSection />
+          <ScrollReveal><ReviewsSection /></ScrollReveal>
         </Suspense>
         <Suspense fallback={<SectionPlaceholder minHeight={480} />}>
-          <QualityBanner />
+          <ScrollReveal><QualityBanner /></ScrollReveal>
         </Suspense>
         <Suspense fallback={<SectionPlaceholder minHeight={320} />}>
-          <Newsletter />
+          <ScrollReveal><Newsletter /></ScrollReveal>
         </Suspense>
       </main>
       <Footer />

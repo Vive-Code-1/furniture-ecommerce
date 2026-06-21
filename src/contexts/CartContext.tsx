@@ -72,7 +72,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // 1. Fetch remote cart with product details.
       const { data: remote, error } = await supabase
         .from("cart_items")
-        .select("product_id, quantity, products:product_id (id, name, price, image_url)")
+        .select("product_id, quantity, products:product_id (id, name, price, thumbnail_url)")
         .eq("user_id", user.id);
 
       if (cancelled || error) return;
@@ -83,7 +83,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
           id: r.products.id,
           name: r.products.name,
           price: Number(r.products.price),
-          image: r.products.image_url ?? "",
+          image: r.products.thumbnail_url ?? "",
           quantity: r.quantity,
         }));
 

@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Guest can create orders" ON public.orders;
